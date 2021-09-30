@@ -20,6 +20,7 @@ import 'exposure_point_widget.dart';
 
 const Color _lockedColor = Colors.amber;
 const Duration _kRouteDuration = Duration(milliseconds: 300);
+FlashMode lastFlashMode = FlashMode.auto;
 
 /// Create a camera picker integrate with [CameraDescription].
 /// 通过 [CameraDescription] 整合的拍照选择
@@ -500,6 +501,10 @@ class CameraPickerState extends State<CameraPicker>
           (() async =>
               _minAvailableZoom = await controller.getMinZoomLevel())(),
         ]);
+        // Retain flash settings when the user leaves the camera
+        if (controller.value.flashMode != lastFlashMode) {
+          await controller.setFlashMode(lastFlashMode);
+        }
       } catch (_) {
         rethrow;
       } finally {
@@ -525,18 +530,21 @@ class CameraPickerState extends State<CameraPicker>
   /// The method to switch between flash modes.
   /// 切换闪光灯模式的方法
   Future<void> switchFlashesMode() async {
+    FlashMode mode = FlashMode.auto;
     switch (controller.value.flashMode) {
       case FlashMode.off:
-        await controller.setFlashMode(FlashMode.auto);
+        mode = FlashMode.auto;
         break;
       case FlashMode.auto:
-        await controller.setFlashMode(FlashMode.always);
+        mode = FlashMode.always;
         break;
       case FlashMode.always:
       case FlashMode.torch:
-        await controller.setFlashMode(FlashMode.off);
+        mode = FlashMode.off;
         break;
     }
+    await controller.setFlashMode(mode);
+    lastFlashMode = mode;
   }
 
   Future<void> zoom(double scale) async {
