@@ -841,7 +841,7 @@ class CameraPickerState extends State<CameraPicker>
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
           child: Row(
             children: <Widget>[
-              if (cameras.length > 1) switchCamerasButton,
+              if (cameras.length > 1) backButtonText,
               const Spacer(),
               switchFlashesButton(v),
             ],
@@ -849,6 +849,33 @@ class CameraPickerState extends State<CameraPicker>
         );
       },
     );
+  }
+  Widget get backButtonText {
+    return InkWell(
+      onTap: Navigator.of(context).pop,
+      child: Row(
+        children: [
+          Icon(
+            Platform.isIOS
+                ? Icons.arrow_left
+                : Icons.arrow_left,
+            size: 32,
+            color: Colors.white,
+          ),
+          const Text('Back',style: TextStyle(color: Colors.white),)
+        ],
+      ),
+    );
+    /*return  TextButton.icon(
+        onPressed: Navigator.of(context).pop,
+        icon: Icon(
+          Platform.isIOS
+              ? Icons.arrow_left
+              : Icons.arrow_left,
+          size: 32,
+          color: Colors.white,
+        ), label: const Text('Back',style: TextStyle(color: Colors.white),),);
+  */
   }
 
   /// The button to switch between cameras.
@@ -860,11 +887,23 @@ class CameraPickerState extends State<CameraPicker>
         Platform.isIOS
             ? Icons.flip_camera_ios_outlined
             : Icons.flip_camera_android_outlined,
-        size: 24,
+        size: 32,
       ),
     );
   }
+  Widget get aspectRatio {
+    return IconButton(
+      onPressed: () {
 
+      },
+      icon: Icon(
+        Platform.isIOS
+            ? Icons.aspect_ratio
+            : Icons.aspect_ratio,
+        size: 32,
+      ),
+    );
+  }
   /// The button to switch flash modes.
   /// 切换闪光灯模式的按钮
   Widget switchFlashesButton(CameraValue value) {
@@ -883,7 +922,7 @@ class CameraPickerState extends State<CameraPicker>
     }
     return IconButton(
       onPressed: switchFlashesMode,
-      icon: Icon(icon, size: 24),
+      icon: Icon(icon, size: 28),
     );
   }
 
@@ -919,13 +958,15 @@ class CameraPickerState extends State<CameraPicker>
       height: 118,
       child: Row(
         children: <Widget>[
-          Expanded(
+          /*Expanded(
             child: controller?.value.isRecordingVideo == true
                 ? const SizedBox.shrink()
                 : Center(child: backButton(context, constraints)),
-          ),
+          ),*/
+          //const Spacer(),
+          Expanded(child: Center(child: aspectRatio)),
           Expanded(child: Center(child: shootingButton(constraints))),
-          const Spacer(),
+          Expanded(child: Center(child: switchCamerasButton,),),
         ],
       ),
     );
@@ -959,7 +1000,7 @@ class CameraPickerState extends State<CameraPicker>
   /// 拍照按钮
   Widget shootingButton(BoxConstraints constraints) {
     const Size outerSize = Size.square(115);
-    const Size innerSize = Size.square(82);
+    const Size innerSize = Size.square(72);
     return Listener(
       behavior: HitTestBehavior.opaque,
       onPointerUp: enableRecording ? recordDetectionCancel : null,
@@ -983,7 +1024,7 @@ class CameraPickerState extends State<CameraPicker>
                   height: isShootingButtonAnimate
                       ? outerSize.height
                       : innerSize.height,
-                  padding: EdgeInsets.all(isShootingButtonAnimate ? 41 : 11),
+                  padding: EdgeInsets.all(isShootingButtonAnimate ? 15 : 11),
                   decoration: BoxDecoration(
                     color: theme.canvasColor.withOpacity(0.85),
                     shape: BoxShape.circle,
@@ -1294,24 +1335,28 @@ class CameraPickerState extends State<CameraPicker>
     required CameraValue value,
     required BoxConstraints constraints,
   }) {
-    return AspectRatio(
-      aspectRatio: value.aspectRatio,
-      child: RepaintBoundary(
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: _cameraPreview(
-                context,
-                orientation: value.deviceOrientation,
-                constraints: constraints,
+    return Align(
+        alignment: Alignment.center,
+      child: AspectRatio(
+        aspectRatio: 5/4,
+        child: RepaintBoundary(
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: _cameraPreview(
+                  context,
+                  orientation: value.deviceOrientation,
+                  constraints: constraints,
+                ),
               ),
-            ),
-            if (widget.foregroundBuilder != null)
-              Positioned.fill(child: widget.foregroundBuilder!(value)),
-          ],
+              if (widget.foregroundBuilder != null)
+                Positioned.fill(child: widget.foregroundBuilder!(value)),
+            ],
+          ),
         ),
       ),
     );
+
   }
 
   Widget _contentBuilder(BoxConstraints constraints) {
