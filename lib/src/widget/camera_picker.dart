@@ -246,6 +246,10 @@ class CameraPickerState extends State<CameraPicker>
   final ValueNotifier<bool> _isExposureModeDisplays =
       ValueNotifier<bool>(false);
 
+  bool toggle = true;
+  late OverlayState overlayState;
+  OverlayEntry? _overlayEntry;
+
   /// The controller for the current camera.
   /// 当前相机实例的控制器
   CameraController get controller => _controller!;
@@ -402,6 +406,7 @@ class CameraPickerState extends State<CameraPicker>
     _exposureModeDisplayTimer?.cancel();
     _recordDetectTimer?.cancel();
     _recordCountdownTimer?.cancel();
+    _overlayEntry?.remove();
     super.dispose();
   }
 
@@ -412,6 +417,7 @@ class CameraPickerState extends State<CameraPicker>
       return;
     }
     if (state == AppLifecycleState.inactive) {
+      _overlayEntry?.remove(); // To remove grid lines on back press
       controller.dispose();
     } else if (state == AppLifecycleState.resumed) {
       initCameras(currentCamera);
@@ -856,13 +862,14 @@ class CameraPickerState extends State<CameraPicker>
       child: Row(
         children: [
           Icon(
-            Platform.isIOS
-                ? Icons.arrow_left
-                : Icons.arrow_left,
+            Platform.isIOS ? Icons.arrow_left : Icons.arrow_left,
             size: 32,
             color: Colors.white,
           ),
-          const Text('Back',style: TextStyle(color: Colors.white),)
+          const Text(
+            'Back',
+            style: TextStyle(color: Colors.white),
+          )
         ],
       ),
     );
@@ -891,19 +898,25 @@ class CameraPickerState extends State<CameraPicker>
       ),
     );
   }
+
   Widget get aspectRatio {
     return IconButton(
       onPressed: () {
-
+        toggle == true ? _showOverlay(context) : _showCamera(context);
+        //_showOverlay(context);
       },
-      icon: Icon(
-        Platform.isIOS
-            ? Icons.aspect_ratio
-            : Icons.aspect_ratio,
-        size: 32,
-      ),
+      icon: toggle == true
+          ? Icon(
+              Platform.isIOS ? Icons.aspect_ratio : Icons.aspect_ratio,
+              size: 32,
+            )
+          : Icon(
+              Platform.isIOS ? Icons.camera_alt : Icons.camera_alt,
+              size: 32,
+            ),
     );
   }
+
   /// The button to switch flash modes.
   /// 切换闪光灯模式的按钮
   Widget switchFlashesButton(CameraValue value) {
@@ -966,7 +979,11 @@ class CameraPickerState extends State<CameraPicker>
           //const Spacer(),
           Expanded(child: Center(child: aspectRatio)),
           Expanded(child: Center(child: shootingButton(constraints))),
-          Expanded(child: Center(child: switchCamerasButton,),),
+          Expanded(
+            child: Center(
+              child: switchCamerasButton,
+            ),
+          ),
         ],
       ),
     );
@@ -1336,9 +1353,9 @@ class CameraPickerState extends State<CameraPicker>
     required BoxConstraints constraints,
   }) {
     return Align(
-        alignment: Alignment.center,
+      alignment: Alignment.center,
       child: AspectRatio(
-        aspectRatio: 5/4,
+        aspectRatio: 5 / 4,
         child: RepaintBoundary(
           child: Stack(
             children: <Widget>[
@@ -1356,7 +1373,6 @@ class CameraPickerState extends State<CameraPicker>
         ),
       ),
     );
-
   }
 
   Widget _contentBuilder(BoxConstraints constraints) {
@@ -1415,6 +1431,103 @@ class CameraPickerState extends State<CameraPicker>
         ),
       ),
     );
+  }
+
+  void _showOverlay(BuildContext context) async {
+    toggle = false;
+    setState(() {});
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
+    final double widthFinal = width/3;
+    final double heightFinal = height/2;
+    _overlayEntry = OverlayEntry(builder: (context) {
+      return Align(
+          alignment: Alignment.center,
+          //1 - Grid
+          /*child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 1.1,
+            ),
+            itemCount: 9,
+            itemBuilder: (BuildContext context, int index) {
+              return Container(
+                decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(width: 1.0, color: Colors.white),
+                      right: BorderSide(width: 1.0, color: Colors.white),
+                    )
+                ),
+              );
+            },
+          ),*/
+          //2 - Table
+        /*child: Table(
+          defaultColumnWidth: const FixedColumnWidth(130.0),
+          border: const TableBorder( horizontalInside: BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid),
+              verticalInside:BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid) ),
+          children: [
+            TableRow( children: [
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+            ]),
+            TableRow( children: [
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+            ]),
+            TableRow( children: [
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+            ]),
+          ],
+         )*/
+        //3 - Preview
+         child : AspectRatio(
+           aspectRatio: 5 / 4,
+           child: RepaintBoundary(
+             child: Stack(
+               children: <Widget>[
+                 Positioned.fill(
+                   child: Table(
+                     border: const TableBorder( horizontalInside: BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid),
+                         verticalInside:BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid) ),
+                     children: [
+                       TableRow( children: [
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children:[Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                       ]),
+                       TableRow( children: [
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                       ]),
+                       TableRow( children: [
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                       ]),
+                     ],
+                   )
+                 ),
+               ],
+             ),
+           ),
+         )
+      );
+    });
+    Overlay.of(context)?.insert(_overlayEntry!);
+  }
+
+  void _showCamera(BuildContext context) {
+    toggle = true;
+    setState(() {});
+    _overlayEntry?.remove();
   }
 }
 
