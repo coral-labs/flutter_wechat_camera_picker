@@ -1492,7 +1492,9 @@ class CameraPickerState extends State<CameraPicker>
            child: RepaintBoundary(
              child: Stack(
                children: <Widget>[
-                 Positioned.fill(
+                 Positioned(
+                   height:height,
+                   width: width,
                    child: Table(
                      border: const TableBorder( horizontalInside: BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid),
                          verticalInside:BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid) ),
