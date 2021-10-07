@@ -246,6 +246,10 @@ class CameraPickerState extends State<CameraPicker>
   final ValueNotifier<bool> _isExposureModeDisplays =
       ValueNotifier<bool>(false);
 
+  bool toggle = true;
+  late OverlayState overlayState;
+  OverlayEntry? _overlayEntry;
+
   /// The controller for the current camera.
   /// 当前相机实例的控制器
   CameraController get controller => _controller!;
@@ -402,6 +406,7 @@ class CameraPickerState extends State<CameraPicker>
     _exposureModeDisplayTimer?.cancel();
     _recordDetectTimer?.cancel();
     _recordCountdownTimer?.cancel();
+    _overlayEntry?.remove();
     super.dispose();
   }
 
@@ -412,6 +417,7 @@ class CameraPickerState extends State<CameraPicker>
       return;
     }
     if (state == AppLifecycleState.inactive) {
+      _overlayEntry?.remove(); // To remove grid lines on back press
       controller.dispose();
     } else if (state == AppLifecycleState.resumed) {
       initCameras(currentCamera);
@@ -841,7 +847,7 @@ class CameraPickerState extends State<CameraPicker>
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
           child: Row(
             children: <Widget>[
-              if (cameras.length > 1) switchCamerasButton,
+              if (cameras.length > 1) backButtonText,
               const Spacer(),
               switchFlashesButton(v),
             ],
@@ -849,6 +855,34 @@ class CameraPickerState extends State<CameraPicker>
         );
       },
     );
+  }
+  Widget get backButtonText {
+    return InkWell(
+      onTap: Navigator.of(context).pop,
+      child: Row(
+        children: [
+          Icon(
+            Platform.isIOS ? Icons.arrow_left : Icons.arrow_left,
+            size: 32,
+            color: Colors.white,
+          ),
+          const Text(
+            'Back',
+            style: TextStyle(color: Colors.white),
+          )
+        ],
+      ),
+    );
+    /*return  TextButton.icon(
+        onPressed: Navigator.of(context).pop,
+        icon: Icon(
+          Platform.isIOS
+              ? Icons.arrow_left
+              : Icons.arrow_left,
+          size: 32,
+          color: Colors.white,
+        ), label: const Text('Back',style: TextStyle(color: Colors.white),),);
+  */
   }
 
   /// The button to switch between cameras.
@@ -860,8 +894,26 @@ class CameraPickerState extends State<CameraPicker>
         Platform.isIOS
             ? Icons.flip_camera_ios_outlined
             : Icons.flip_camera_android_outlined,
-        size: 24,
+        size: 32,
       ),
+    );
+  }
+
+  Widget get aspectRatio {
+    return IconButton(
+      onPressed: () {
+        toggle == true ? _showOverlay(context) : _showCamera(context);
+        //_showOverlay(context);
+      },
+      icon: toggle == true
+          ? Icon(
+              Platform.isIOS ? Icons.aspect_ratio : Icons.aspect_ratio,
+              size: 32,
+            )
+          : Icon(
+              Platform.isIOS ? Icons.camera_alt : Icons.camera_alt,
+              size: 32,
+            ),
     );
   }
 
@@ -883,7 +935,7 @@ class CameraPickerState extends State<CameraPicker>
     }
     return IconButton(
       onPressed: switchFlashesMode,
-      icon: Icon(icon, size: 24),
+      icon: Icon(icon, size: 28),
     );
   }
 
@@ -919,13 +971,19 @@ class CameraPickerState extends State<CameraPicker>
       height: 118,
       child: Row(
         children: <Widget>[
-          Expanded(
+          /*Expanded(
             child: controller?.value.isRecordingVideo == true
                 ? const SizedBox.shrink()
                 : Center(child: backButton(context, constraints)),
-          ),
+          ),*/
+          //const Spacer(),
+          Expanded(child: Center(child: aspectRatio)),
           Expanded(child: Center(child: shootingButton(constraints))),
-          const Spacer(),
+          Expanded(
+            child: Center(
+              child: switchCamerasButton,
+            ),
+          ),
         ],
       ),
     );
@@ -959,7 +1017,7 @@ class CameraPickerState extends State<CameraPicker>
   /// 拍照按钮
   Widget shootingButton(BoxConstraints constraints) {
     const Size outerSize = Size.square(115);
-    const Size innerSize = Size.square(82);
+    const Size innerSize = Size.square(72);
     return Listener(
       behavior: HitTestBehavior.opaque,
       onPointerUp: enableRecording ? recordDetectionCancel : null,
@@ -983,7 +1041,7 @@ class CameraPickerState extends State<CameraPicker>
                   height: isShootingButtonAnimate
                       ? outerSize.height
                       : innerSize.height,
-                  padding: EdgeInsets.all(isShootingButtonAnimate ? 41 : 11),
+                  padding: EdgeInsets.all(isShootingButtonAnimate ? 15 : 11),
                   decoration: BoxDecoration(
                     color: theme.canvasColor.withOpacity(0.85),
                     shape: BoxShape.circle,
@@ -1294,21 +1352,24 @@ class CameraPickerState extends State<CameraPicker>
     required CameraValue value,
     required BoxConstraints constraints,
   }) {
-    return AspectRatio(
-      aspectRatio: value.aspectRatio,
-      child: RepaintBoundary(
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: _cameraPreview(
-                context,
-                orientation: value.deviceOrientation,
-                constraints: constraints,
+    return Align(
+      alignment: Alignment.center,
+      child: AspectRatio(
+        aspectRatio: 5 / 4,
+        child: RepaintBoundary(
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: _cameraPreview(
+                  context,
+                  orientation: value.deviceOrientation,
+                  constraints: constraints,
+                ),
               ),
-            ),
-            if (widget.foregroundBuilder != null)
-              Positioned.fill(child: widget.foregroundBuilder!(value)),
-          ],
+              if (widget.foregroundBuilder != null)
+                Positioned.fill(child: widget.foregroundBuilder!(value)),
+            ],
+          ),
         ),
       ),
     );
@@ -1370,6 +1431,103 @@ class CameraPickerState extends State<CameraPicker>
         ),
       ),
     );
+  }
+
+  void _showOverlay(BuildContext context) async {
+    toggle = false;
+    setState(() {});
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
+    final double widthFinal = width/3;
+    final double heightFinal = height/2;
+    _overlayEntry = OverlayEntry(builder: (context) {
+      return Align(
+          alignment: Alignment.center,
+          //1 - Grid
+          /*child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 1.1,
+            ),
+            itemCount: 9,
+            itemBuilder: (BuildContext context, int index) {
+              return Container(
+                decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(width: 1.0, color: Colors.white),
+                      right: BorderSide(width: 1.0, color: Colors.white),
+                    )
+                ),
+              );
+            },
+          ),*/
+          //2 - Table
+        /*child: Table(
+          defaultColumnWidth: const FixedColumnWidth(130.0),
+          border: const TableBorder( horizontalInside: BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid),
+              verticalInside:BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid) ),
+          children: [
+            TableRow( children: [
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+            ]),
+            TableRow( children: [
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+            ]),
+            TableRow( children: [
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+              Column(children:const [Padding(padding: EdgeInsets.all(40),child: SizedBox(height : 22),)]),
+            ]),
+          ],
+         )*/
+        //3 - Preview
+         child : AspectRatio(
+           aspectRatio: 5 / 4,
+           child: RepaintBoundary(
+             child: Stack(
+               children: <Widget>[
+                 Positioned.fill(
+                   child: Table(
+                     border: const TableBorder( horizontalInside: BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid),
+                         verticalInside:BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid) ),
+                     children: [
+                       TableRow( children: [
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children:[Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                       ]),
+                       TableRow( children: [
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                       ]),
+                       TableRow( children: [
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
+                       ]),
+                     ],
+                   )
+                 ),
+               ],
+             ),
+           ),
+         )
+      );
+    });
+    Overlay.of(context)?.insert(_overlayEntry!);
+  }
+
+  void _showCamera(BuildContext context) {
+    toggle = true;
+    setState(() {});
+    _overlayEntry?.remove();
   }
 }
 
