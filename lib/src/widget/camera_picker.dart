@@ -47,9 +47,9 @@ class CameraPicker extends StatefulWidget {
     this.onEntitySaving,
     CameraPickerTextDelegate? textDelegate,
   })  : assert(
-          enableRecording == true || onlyEnableRecording != true,
-          'Recording mode error.',
-        ),
+  enableRecording == true || onlyEnableRecording != true,
+  'Recording mode error.',
+  ),
         super(key: key) {
     Constants.textDelegate = textDelegate ??
         (enableRecording
@@ -844,7 +844,7 @@ class CameraPickerState extends State<CameraPicker>
           return const SizedBox.shrink();
         }
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
           child: Row(
             children: <Widget>[
               if (cameras.length > 1) backButtonText,
@@ -860,15 +860,23 @@ class CameraPickerState extends State<CameraPicker>
     return InkWell(
       onTap: Navigator.of(context).pop,
       child: Row(
-        children: [
-          Icon(
-            Platform.isIOS ? Icons.arrow_left : Icons.arrow_left,
-            size: 32,
-            color: Colors.white,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+
+          Padding(
+            padding: const EdgeInsets.only(left : 8.0, top : 10.0),
+            child: Icon(
+              Platform.isIOS ? Icons.arrow_left : Icons.arrow_left,
+              size: 36,
+              color: Colors.white,
+            ),
           ),
-          const Text(
-            'Back',
-            style: TextStyle(color: Colors.white),
+          const Padding(
+            padding: EdgeInsets.only(top : 10.0),
+            child: Text(
+              'Back',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16.0),
+            ),
           )
         ],
       ),
@@ -947,11 +955,11 @@ class CameraPickerState extends State<CameraPicker>
       opacity: controller?.value.isRecordingVideo == true ? 0 : 1,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          vertical: 20.0,
+          vertical: 8.0,
         ),
         child: Text(
           Constants.textDelegate.shootingTips,
-          style: const TextStyle(fontSize: 15.0),
+          style: const TextStyle(fontSize: 14.0),
         ),
       ),
     );
@@ -1355,7 +1363,7 @@ class CameraPickerState extends State<CameraPicker>
     return Align(
       alignment: Alignment.center,
       child: AspectRatio(
-        aspectRatio: 5 / 4,
+        aspectRatio: 4 / 5,
         child: RepaintBoundary(
           child: Stack(
             children: <Widget>[
@@ -1439,7 +1447,7 @@ class CameraPickerState extends State<CameraPicker>
     double width = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
     final double widthFinal = width/3;
-    final double heightFinal = height/2;
+    double heightFinal = height/3;
     _overlayEntry = OverlayEntry(builder: (context) {
       return Align(
           alignment: Alignment.center,
@@ -1486,41 +1494,41 @@ class CameraPickerState extends State<CameraPicker>
             ]),
           ],
          )*/
-        //3 - Preview
-         child : AspectRatio(
-           aspectRatio: 5 / 4,
-           child: RepaintBoundary(
-             child: Stack(
-               children: <Widget>[
-                 Positioned(
-                   height:height,
-                   width: width,
-                   child: Table(
-                     border: const TableBorder( horizontalInside: BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid),
-                         verticalInside:BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid) ),
-                     children: [
-                       TableRow( children: [
-                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                         Column(children:[Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                       ]),
-                       TableRow( children: [
-                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                       ]),
-                       TableRow( children: [
-                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                         Column(children: [Padding(padding: EdgeInsets.all((widthFinal/3)),child: const SizedBox(height : 22),)]),
-                       ]),
-                     ],
-                   )
-                 ),
-               ],
-             ),
-           ),
-         )
+          //3 - Preview
+          child : AspectRatio(
+            aspectRatio: 4 / 5,
+            child: RepaintBoundary(
+              child: Stack(
+                children: <Widget>[
+                  Positioned(
+                      height : height,
+                      width : width,
+                      child: Table(
+                        border: const TableBorder( horizontalInside: BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid),
+                            verticalInside:BorderSide(width: 1, color: Colors.white, style: BorderStyle.solid) ),
+                        children: [
+                          TableRow( children: [
+                            Column(children: [Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                            Column(children:[Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                            Column(children: [Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                          ]),
+                          TableRow( children: [
+                            Column(children: [Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                            Column(children: [Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                            Column(children: [Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                          ]),
+                          TableRow( children: [
+                            Column(children: [Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                            Column(children: [Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                            Column(children: [Padding(padding: EdgeInsets.all(widthFinal/3),child: SizedBox(height : heightFinal/3),)]),
+                          ]),
+                        ],
+                      )
+                  ),
+                ],
+              ),
+            ),
+          )
       );
     });
     Overlay.of(context)?.insert(_overlayEntry!);
