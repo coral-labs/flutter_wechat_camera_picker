@@ -1309,23 +1309,21 @@ class CameraPickerState extends State<CameraPicker>
         _height = constraints.maxHeight;
         break;
     }
-    final double _offsetHorizontal = (_width - constraints.maxWidth).abs() / -2;
-    final double _offsetVertical = (_height - constraints.maxHeight).abs() / -2;
+    //final double _offsetHorizontal = (_width - constraints.maxWidth).abs();
+    //final double _offsetVertical = (_height - constraints.maxHeight).abs();
     // Flip the preview if the user is using a front camera to match the result.
     if (currentCamera.lensDirection == CameraLensDirection.front) {
       _preview = Transform(
         transform: Matrix4.rotationY(math.pi),
-        alignment: Alignment.center,
+        //alignment: Alignment.bottomRight,
         child: _preview,
       );
     }
     _preview = Stack(
       children: <Widget>[
         Positioned(
-          left: _offsetHorizontal,
-          right: _offsetHorizontal,
-          top: _offsetVertical,
-          bottom: _offsetVertical,
+          width : MediaQuery.of(context).size.width,
+          height : MediaQuery.of(context).size.height,
           child: RotatedBox(
             quarterTurns: -widget.cameraQuarterTurns,
             child: _preview,
