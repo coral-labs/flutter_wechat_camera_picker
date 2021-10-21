@@ -987,8 +987,7 @@ class CameraPickerState extends State<CameraPicker>
           //const Spacer(),
           Expanded(child: Center(child: aspectRatio)),
           Expanded(child: Center(child: shootingButton(constraints))),
-          Expanded(
-            child: Center(
+          Expanded(child: Center(
               child: switchCamerasButton,
             ),
           ),
@@ -1361,7 +1360,7 @@ class CameraPickerState extends State<CameraPicker>
     return Align(
       alignment: Alignment.center,
       child: AspectRatio(
-        aspectRatio: 4 / 5,
+        aspectRatio: 4 / 3,
         child: RepaintBoundary(
           child: Stack(
             children: <Widget>[
@@ -1439,13 +1438,13 @@ class CameraPickerState extends State<CameraPicker>
     );
   }
 
-  void _showOverlay(BuildContext context) async {
+  void _showOverlay(BuildContext context) {
     toggle = false;
     setState(() {});
     double width = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
-    final double widthFinal = width/3;
-    double heightFinal = height/3;
+    final double widthFinal = width/5;
+    final double heightFinal = height/5;
     _overlayEntry = OverlayEntry(builder: (context) {
       return Align(
           alignment: Alignment.center,
@@ -1494,7 +1493,7 @@ class CameraPickerState extends State<CameraPicker>
          )*/
           //3 - Preview
           child : AspectRatio(
-            aspectRatio: 4 / 5,
+            aspectRatio: 4 / 3,
             child: RepaintBoundary(
               child: Stack(
                 children: <Widget>[
