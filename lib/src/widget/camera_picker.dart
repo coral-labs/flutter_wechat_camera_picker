@@ -225,7 +225,7 @@ class CameraPicker extends StatefulWidget {
 }
 
 class CameraPickerState extends State<CameraPicker>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver  {
   /// The [Duration] for record detection. (200ms)
   /// 检测是否开始录制的时长 (200毫秒)
   final Duration recordDetectDuration = const Duration(milliseconds: 200);
@@ -252,6 +252,8 @@ class CameraPickerState extends State<CameraPicker>
   double get currentAspectRatio =>
       toggleCrop ? Config.cropAspectRatio : Config.aspectRatio;
 
+  double get currentAspectRatioLandscape =>
+      toggleCrop ? Config.cropAspectRatioLandscape : Config.aspectRatioLandscape;
   /// The controller for the current camera.
   /// 当前相机实例的控制器
   CameraController get controller => _controller!;
@@ -374,6 +376,7 @@ class CameraPickerState extends State<CameraPicker>
   @override
   void initState() {
     super.initState();
+    WidgetsFlutterBinding.ensureInitialized();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitDown,
       DeviceOrientation.portraitUp,
@@ -854,7 +857,7 @@ class CameraPickerState extends State<CameraPicker>
           return const SizedBox.shrink();
         }
         return Container(
-          height: 120,
+          height: 100,
           child: Row(
             children: <Widget>[
               backButtonText,
@@ -870,26 +873,29 @@ class CameraPickerState extends State<CameraPicker>
   Widget get backButtonText {
     return InkWell(
       onTap: Navigator.of(context).pop,
-      child: Container(
-        padding: const EdgeInsets.all(8.0),
-        color: Colors.transparent,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const <Widget>[
-            Icon(
-              Icons.arrow_left,
-              size: 36,
-              color: Colors.white,
-            ),
-            SizedBox(width: 8),
-            Text(
-              'Back',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16.0),
-            )
-          ],
+      child: RotatedBox(
+        quarterTurns: MediaQuery.of(context).orientation == Orientation.portrait ? 0 : 1,
+        child: Container(
+          padding: const EdgeInsets.all(8.0),
+          color: Colors.transparent,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const <Widget>[
+              Icon(
+                Icons.arrow_left,
+                size: 36,
+                color: Colors.white,
+              ),
+             //SizedBox(width: 4),
+              Text(
+                'Back',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.0),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -947,9 +953,15 @@ class CameraPickerState extends State<CameraPicker>
         icon = Icons.flash_on;
         break;
     }
-    return IconButton(
-      onPressed: switchFlashesMode,
-      icon: Icon(icon, size: 28),
+    return RotatedBox(
+      quarterTurns: MediaQuery.of(context).orientation == Orientation.portrait ? 0 : 1,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 8.0,top: 15.0,bottom: 8.0,right: 8.0),
+        child: IconButton(
+          onPressed: switchFlashesMode,
+          icon: Icon(icon, size: 28),
+        ),
+      ),
     );
   }
 
@@ -1306,7 +1318,7 @@ class CameraPickerState extends State<CameraPicker>
     // Flip the preview if the user is using a front camera to match the result.
     if (currentCamera.lensDirection == CameraLensDirection.front) {
       _preview = Transform(
-        transform: Matrix4.rotationY(math.pi),
+        transform: Matrix4.rotationY(0),
         alignment: Alignment.center,
         child: _preview,
       );
@@ -1323,10 +1335,13 @@ class CameraPickerState extends State<CameraPicker>
             child: _preview,
           ),
         ),
-        Positioned.fill(
+        if (MediaQuery.of(context).orientation == Orientation.portrait) Positioned.fill(
             child: AspectRatioMark(
-          Config.aspectRatio,
-        ))
+              Config.aspectRatio,
+        )) else Positioned.fill(
+            child: AspectRatioMark(
+              Config.aspectRatioLandscape,
+            )),
       ],
     );
     return _preview;
@@ -1380,13 +1395,16 @@ class CameraPickerState extends State<CameraPicker>
   }
 
   Widget _contentBuilder(BoxConstraints constraints) {
-    return Column(
-      children: <Widget>[
-        const SizedBox(height: 25),
-        settingsAction,
-        const Spacer(),
-        shootingActions(context, _controller, constraints),
-      ],
+    return RotatedBox(
+      quarterTurns: MediaQuery.of(context).orientation == Orientation.portrait ? 0 : 3,
+      child: Column(
+        children: <Widget>[
+          const SizedBox(height: 25),
+          settingsAction,
+          const Spacer(),
+          shootingActions(context, _controller, constraints),
+        ],
+      ),
     );
   }
 
@@ -1403,7 +1421,7 @@ class CameraPickerState extends State<CameraPicker>
             child: LayoutBuilder(
               builder: (BuildContext c, BoxConstraints constraints) => Stack(
                 children: <Widget>[
-                  Stack(
+                  if (MediaQuery.of(context).orientation == Orientation.portrait) Stack(
                     fit: StackFit.expand,
                     alignment: Alignment.center,
                     children: [
@@ -1411,6 +1429,35 @@ class CameraPickerState extends State<CameraPicker>
                         top: 0,
                         bottom: 40,
                         width: MediaQuery.of(context).size.width,
+                        child: _initializeWrapper(
+                          builder: (CameraValue value, __) {
+                            if (value.isInitialized) {
+                              return _cameraBuilder(
+                                context: c,
+                                value: value,
+                                constraints: constraints,
+                              );
+                            }
+                            return const SizedBox.expand();
+                          },
+                        ),
+                      ),
+                      if (enableSetExposure)
+                        _exposureDetectorWidget(c, constraints),
+                      _initializeWrapper(
+                        builder: (_, __) => _focusingAreaWidget(constraints),
+                      ),
+                      _contentBuilder(constraints),
+                    ],
+                  ) else Stack(
+                    fit: StackFit.loose,
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        right: 170,
+                        left: 120,
+                        top: 0,
+                        bottom: 0,
                         child: _initializeWrapper(
                           builder: (CameraValue value, __) {
                             if (value.isInitialized) {
@@ -1443,11 +1490,21 @@ class CameraPickerState extends State<CameraPicker>
 
   Widget _buildOverlayGrid(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return IgnorePointer(
+    return (MediaQuery.of(context).orientation == Orientation.portrait) ? IgnorePointer(
       child: Center(
         child: Container(
           width: size.width,
           height: size.width / currentAspectRatio,
+          child: CustomPaint(
+            painter: GridLine(),
+          ),
+        ),
+      ),
+    ) : IgnorePointer(
+      child: Center(
+        child: Container(
+          width: size.width,
+          height: size.width ,
           child: CustomPaint(
             painter: GridLine(),
           ),
@@ -1458,14 +1515,24 @@ class CameraPickerState extends State<CameraPicker>
 
   Widget _buildOverlayCrop(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
-    return IgnorePointer(
+    return (MediaQuery.of(context).orientation == Orientation.portrait) ?  IgnorePointer(
       child: Center(
         child: SizedBox(
           width: size.width,
           height: size.width / Config.aspectRatio,
           child: AspectRatioMark(
             Config.cropAspectRatio,
+            markColor: Colors.black.withOpacity(0.8),
+          ),
+        ),
+      ),
+    ): IgnorePointer(
+      child: Center(
+        child: SizedBox(
+          width: size.width,
+          height: size.width / Config.aspectRatioLandscape,
+          child: AspectRatioMark(
+            Config.cropAspectRatioLandscape,
             markColor: Colors.black.withOpacity(0.8),
           ),
         ),

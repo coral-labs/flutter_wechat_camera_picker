@@ -8,7 +8,24 @@ class AspectRatioMark extends StatelessWidget {
   final Color markColor;
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return (MediaQuery.of(context).orientation == Orientation.portrait) ? Column(
+      children: [
+        Expanded(
+          child: Container(
+            color: markColor,
+          ),
+        ),
+        AspectRatio(
+          aspectRatio: aspectRatio,
+          child: SizedBox(),
+        ),
+        Expanded(
+          child: Container(
+            color: markColor,
+          ),
+        ),
+      ],
+    ) : Row(
       children: [
         Expanded(
           child: Container(
