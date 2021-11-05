@@ -225,7 +225,7 @@ class CameraPicker extends StatefulWidget {
 }
 
 class CameraPickerState extends State<CameraPicker>
-    with WidgetsBindingObserver  {
+    with WidgetsBindingObserver {
   /// The [Duration] for record detection. (200ms)
   /// 检测是否开始录制的时长 (200毫秒)
   final Duration recordDetectDuration = const Duration(milliseconds: 200);
@@ -252,8 +252,13 @@ class CameraPickerState extends State<CameraPicker>
   double get currentAspectRatio =>
       toggleCrop ? Config.cropAspectRatio : Config.aspectRatio;
 
-  double get currentAspectRatioLandscape =>
-      toggleCrop ? Config.cropAspectRatioLandscape : Config.aspectRatioLandscape;
+  double get currentAspectRatioLandscape => toggleCrop
+      ? Config.cropAspectRatioLandscape
+      : Config.aspectRatioLandscape;
+
+  bool isPortrait(BuildContext context) =>
+      MediaQuery.of(context).orientation == Orientation.portrait;
+
   /// The controller for the current camera.
   /// 当前相机实例的控制器
   CameraController get controller => _controller!;
@@ -720,14 +725,16 @@ class CameraPickerState extends State<CameraPicker>
       Future<void>.delayed(const Duration(milliseconds: 500), () {
         controller.dispose();
       });
-      final AssetEntity? entity = await CameraPickerViewer.pushToViewer(context,
-          pickerState: this,
-          pickerType: CameraPickerViewType.image,
-          previewXFile: _file,
-          theme: theme,
-          shouldDeletePreviewFile: shouldDeletePreviewFile,
-          onEntitySaving: widget.onEntitySaving,
-          aspectRatio: currentAspectRatio);
+      final AssetEntity? entity = await CameraPickerViewer.pushToViewer(
+        context,
+        pickerState: this,
+        pickerType: CameraPickerViewType.image,
+        previewXFile: _file,
+        theme: theme,
+        shouldDeletePreviewFile: shouldDeletePreviewFile,
+        onEntitySaving: widget.onEntitySaving,
+        aspectRatio: Config.aspectRatio,
+      );
       if (entity != null) {
         Navigator.of(context).pop(entity);
         return;
@@ -874,7 +881,7 @@ class CameraPickerState extends State<CameraPicker>
     return InkWell(
       onTap: Navigator.of(context).pop,
       child: RotatedBox(
-        quarterTurns: MediaQuery.of(context).orientation == Orientation.portrait ? 0 : 1,
+        quarterTurns: isPortrait(context) ? 0 : 1,
         child: Container(
           padding: const EdgeInsets.all(8.0),
           color: Colors.transparent,
@@ -886,7 +893,7 @@ class CameraPickerState extends State<CameraPicker>
                 size: 36,
                 color: Colors.white,
               ),
-             //SizedBox(width: 4),
+              //SizedBox(width: 4),
               Text(
                 'Back',
                 style: TextStyle(
@@ -954,9 +961,10 @@ class CameraPickerState extends State<CameraPicker>
         break;
     }
     return RotatedBox(
-      quarterTurns: MediaQuery.of(context).orientation == Orientation.portrait ? 0 : 1,
+      quarterTurns: isPortrait(context) ? 0 : 1,
       child: Padding(
-        padding: const EdgeInsets.only(left: 8.0,top: 15.0,bottom: 8.0,right: 8.0),
+        padding: const EdgeInsets.only(
+            left: 8.0, top: 15.0, bottom: 8.0, right: 8.0),
         child: IconButton(
           onPressed: switchFlashesMode,
           icon: Icon(icon, size: 28),
@@ -1335,13 +1343,16 @@ class CameraPickerState extends State<CameraPicker>
             child: _preview,
           ),
         ),
-        if (MediaQuery.of(context).orientation == Orientation.portrait) Positioned.fill(
-            child: AspectRatioMark(
-              Config.aspectRatio,
-        )) else Positioned.fill(
-            child: AspectRatioMark(
-              Config.aspectRatioLandscape,
-            )),
+        if (isPortrait(context))
+          Positioned.fill(
+              child: AspectRatioMark(
+            Config.aspectRatio,
+          ))
+        else
+          Positioned.fill(
+              child: AspectRatioMark(
+            Config.aspectRatioLandscape,
+          )),
       ],
     );
     return _preview;
@@ -1396,7 +1407,7 @@ class CameraPickerState extends State<CameraPicker>
 
   Widget _contentBuilder(BoxConstraints constraints) {
     return RotatedBox(
-      quarterTurns: MediaQuery.of(context).orientation == Orientation.portrait ? 0 : 3,
+      quarterTurns: isPortrait(context) ? 0 : 3,
       child: Column(
         children: <Widget>[
           const SizedBox(height: 25),
@@ -1421,64 +1432,67 @@ class CameraPickerState extends State<CameraPicker>
             child: LayoutBuilder(
               builder: (BuildContext c, BoxConstraints constraints) => Stack(
                 children: <Widget>[
-                  if (MediaQuery.of(context).orientation == Orientation.portrait) Stack(
-                    fit: StackFit.expand,
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned(
-                        top: 0,
-                        bottom: 40,
-                        width: MediaQuery.of(context).size.width,
-                        child: _initializeWrapper(
-                          builder: (CameraValue value, __) {
-                            if (value.isInitialized) {
-                              return _cameraBuilder(
-                                context: c,
-                                value: value,
-                                constraints: constraints,
-                              );
-                            }
-                            return const SizedBox.expand();
-                          },
+                  if (isPortrait(context))
+                    Stack(
+                      fit: StackFit.expand,
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned(
+                          top: 0,
+                          bottom: 40,
+                          width: MediaQuery.of(context).size.width,
+                          child: _initializeWrapper(
+                            builder: (CameraValue value, __) {
+                              if (value.isInitialized) {
+                                return _cameraBuilder(
+                                  context: c,
+                                  value: value,
+                                  constraints: constraints,
+                                );
+                              }
+                              return const SizedBox.expand();
+                            },
+                          ),
                         ),
-                      ),
-                      if (enableSetExposure)
-                        _exposureDetectorWidget(c, constraints),
-                      _initializeWrapper(
-                        builder: (_, __) => _focusingAreaWidget(constraints),
-                      ),
-                      _contentBuilder(constraints),
-                    ],
-                  ) else Stack(
-                    fit: StackFit.loose,
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned(
-                        right: 170,
-                        left: 120,
-                        top: 0,
-                        bottom: 0,
-                        child: _initializeWrapper(
-                          builder: (CameraValue value, __) {
-                            if (value.isInitialized) {
-                              return _cameraBuilder(
-                                context: c,
-                                value: value,
-                                constraints: constraints,
-                              );
-                            }
-                            return const SizedBox.expand();
-                          },
+                        if (enableSetExposure)
+                          _exposureDetectorWidget(c, constraints),
+                        _initializeWrapper(
+                          builder: (_, __) => _focusingAreaWidget(constraints),
                         ),
-                      ),
-                      if (enableSetExposure)
-                        _exposureDetectorWidget(c, constraints),
-                      _initializeWrapper(
-                        builder: (_, __) => _focusingAreaWidget(constraints),
-                      ),
-                      _contentBuilder(constraints),
-                    ],
-                  ),
+                        _contentBuilder(constraints),
+                      ],
+                    )
+                  else
+                    Stack(
+                      fit: StackFit.loose,
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned(
+                          right: 170,
+                          left: 120,
+                          top: 0,
+                          bottom: 0,
+                          child: _initializeWrapper(
+                            builder: (CameraValue value, __) {
+                              if (value.isInitialized) {
+                                return _cameraBuilder(
+                                  context: c,
+                                  value: value,
+                                  constraints: constraints,
+                                );
+                              }
+                              return const SizedBox.expand();
+                            },
+                          ),
+                        ),
+                        if (enableSetExposure)
+                          _exposureDetectorWidget(c, constraints),
+                        _initializeWrapper(
+                          builder: (_, __) => _focusingAreaWidget(constraints),
+                        ),
+                        _contentBuilder(constraints),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -1490,54 +1504,58 @@ class CameraPickerState extends State<CameraPicker>
 
   Widget _buildOverlayGrid(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return (MediaQuery.of(context).orientation == Orientation.portrait) ? IgnorePointer(
-      child: Center(
-        child: Container(
-          width: size.width,
-          height: size.width / currentAspectRatio,
-          child: CustomPaint(
-            painter: GridLine(),
-          ),
-        ),
-      ),
-    ) : IgnorePointer(
-      child: Center(
-        child: Container(
-          width: size.width,
-          height: size.width ,
-          child: CustomPaint(
-            painter: GridLine(),
-          ),
-        ),
-      ),
-    );
+    return isPortrait(context)
+        ? IgnorePointer(
+            child: Center(
+              child: Container(
+                width: size.width,
+                height: size.width / Config.aspectRatio,
+                child: CustomPaint(
+                  painter: GridLine(),
+                ),
+              ),
+            ),
+          )
+        : IgnorePointer(
+            child: Center(
+              child: Container(
+                width: size.width * Config.aspectRatioLandscape,
+                height: size.width,
+                child: CustomPaint(
+                  painter: GridLine(),
+                ),
+              ),
+            ),
+          );
   }
 
   Widget _buildOverlayCrop(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return (MediaQuery.of(context).orientation == Orientation.portrait) ?  IgnorePointer(
-      child: Center(
-        child: SizedBox(
-          width: size.width,
-          height: size.width / Config.aspectRatio,
-          child: AspectRatioMark(
-            Config.cropAspectRatio,
-            markColor: Colors.black.withOpacity(0.8),
-          ),
-        ),
-      ),
-    ): IgnorePointer(
-      child: Center(
-        child: SizedBox(
-          width: size.width,
-          height: size.width / Config.aspectRatioLandscape,
-          child: AspectRatioMark(
-            Config.cropAspectRatioLandscape,
-            markColor: Colors.black.withOpacity(0.8),
-          ),
-        ),
-      ),
-    );
+    return isPortrait(context)
+        ? IgnorePointer(
+            child: Center(
+              child: SizedBox(
+                width: size.width,
+                height: size.width / Config.aspectRatio,
+                child: AspectRatioMark(
+                  Config.cropAspectRatio,
+                  markColor: Colors.black.withOpacity(0.8),
+                ),
+              ),
+            ),
+          )
+        : IgnorePointer(
+            child: Center(
+              child: SizedBox(
+                width: size.width,
+                height: size.width / Config.aspectRatioLandscape,
+                child: AspectRatioMark(
+                  Config.cropAspectRatioLandscape,
+                  markColor: Colors.black.withOpacity(0.8),
+                ),
+              ),
+            ),
+          );
   }
 }
 
