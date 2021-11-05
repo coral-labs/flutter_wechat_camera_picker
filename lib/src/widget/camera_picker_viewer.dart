@@ -13,6 +13,7 @@ import 'package:video_player/video_player.dart';
 
 import '../constants/constants.dart';
 
+import 'aspect_ratio_mark.dart';
 import 'camera_picker.dart';
 
 /// Two types for the viewer: image and video.
@@ -49,6 +50,7 @@ class CameraPickerViewer extends StatefulWidget {
     required this.theme,
     this.shouldDeletePreviewFile = false,
     this.onEntitySaving,
+    this.aspectRatio,
   }) : super(key: key);
 
   /// State of the picker.
@@ -74,6 +76,9 @@ class CameraPickerViewer extends StatefulWidget {
   /// {@macro wechat_camera_picker.SaveEntityCallback}
   final EntitySaveCallback? onEntitySaving;
 
+  // Preview aspectRatio
+  final double? aspectRatio;
+
   /// Static method to push with the navigator.
   /// 跳转至选择预览的静态方法
   static Future<AssetEntity?> pushToViewer(
@@ -84,6 +89,7 @@ class CameraPickerViewer extends StatefulWidget {
     required ThemeData theme,
     bool shouldDeletePreviewFile = false,
     EntitySaveCallback? onEntitySaving,
+    double? aspectRatio,
   }) {
     return Navigator.of(context).push<AssetEntity?>(
       PageRouteBuilder<AssetEntity?>(
@@ -94,6 +100,7 @@ class CameraPickerViewer extends StatefulWidget {
           theme: theme,
           shouldDeletePreviewFile: shouldDeletePreviewFile,
           onEntitySaving: onEntitySaving,
+          aspectRatio: aspectRatio,
         ),
         transitionsBuilder: (
           BuildContext context,
@@ -400,6 +407,10 @@ class _CameraPickerViewerState extends State<CameraPickerViewer> {
                   child: VideoPlayer(videoController),
                 ),
               ),
+            ),
+          if (widget.aspectRatio != null)
+            Positioned.fill(
+              child: AspectRatioMark(widget.aspectRatio!),
             ),
           // Place the button before the actions to ensure it's not blocking.
           if (pickerType == CameraPickerViewType.video) playControlButton,
