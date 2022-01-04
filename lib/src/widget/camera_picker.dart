@@ -1439,7 +1439,7 @@ class CameraPickerState extends State<CameraPicker>
                       children: [
                         Positioned(
                           top: 0,
-                          bottom: 40,
+                          bottom: 0,
                           width: MediaQuery.of(context).size.width,
                           child: _initializeWrapper(
                             builder: (CameraValue value, __) {
@@ -1468,8 +1468,8 @@ class CameraPickerState extends State<CameraPicker>
                       alignment: Alignment.center,
                       children: [
                         Positioned(
-                          right: 170,
-                          left: 120,
+                          right: 0,
+                          left: 0,
                           top: 0,
                           bottom: 0,
                           child: _initializeWrapper(
