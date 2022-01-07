@@ -248,6 +248,7 @@ class CameraPickerState extends State<CameraPicker>
 
   bool toggleGrid = false;
   bool toggleCrop = false;
+
   double get currentAspectRatio =>
       toggleCrop ? Config.cropAspectRatio : Config.aspectRatio;
 
@@ -369,7 +370,7 @@ class CameraPickerState extends State<CameraPicker>
   /// If there's no theme provided from the user, use [CameraPicker.themeData] .
   /// 如果用户未提供主题，
   late final ThemeData _theme =
-      widget.theme ?? CameraPicker.themeData(C.themeColor);
+      widget.theme ?? CameraPicker.themeData(Theme.of(context).primaryColor);
 
   /// Get [ThemeData] of the [AssetPicker] through [Constants.pickerKey].
   /// 通过常量全局 Key 获取当前选择器的主题
@@ -918,8 +919,8 @@ class CameraPickerState extends State<CameraPicker>
                 'Back',
                 style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16.0),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14.0),
               )
             ],
           ),
@@ -945,7 +946,8 @@ class CameraPickerState extends State<CameraPicker>
         });
       },
       icon: Icon(Platform.isIOS ? Icons.crop_outlined : Icons.crop_outlined,
-          size: 32, color: toggleCrop ? C.themeColor : Colors.white),
+          size: 32,
+          color: toggleCrop ? Theme.of(context).primaryColor : Colors.white),
     );
   }
 
@@ -959,7 +961,7 @@ class CameraPickerState extends State<CameraPicker>
       icon: Icon(
         Icons.grid_on_outlined,
         size: 32,
-        color: toggleGrid ? C.themeColor : Colors.white,
+        color: toggleGrid ? Theme.of(context).primaryColor : Colors.white,
       ),
     );
   }
@@ -1003,6 +1005,36 @@ class CameraPickerState extends State<CameraPicker>
     CameraController? controller,
     BoxConstraints constraints,
   ) {
+    return SizedBox(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            child: _girdIconButton,
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            margin: EdgeInsets.only(left: 24),
+            decoration:
+                BoxDecoration(shape: BoxShape.circle, color: Color(0xff999999)),
+          ),
+          Container(
+            width: 112,
+            alignment: Alignment.center,
+            child: Center(child: shootingButton(constraints)),
+          ),
+          Container(
+            child: _switchCamerasButton,
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            margin: EdgeInsets.only(right: 24),
+            decoration:
+                BoxDecoration(shape: BoxShape.circle, color: Color(0xff999999)),
+          ),
+        ],
+      ),
+    );
     return SizedBox(
       child: Column(
         children: <Widget>[
@@ -1055,8 +1087,8 @@ class CameraPickerState extends State<CameraPicker>
   /// The shooting button.
   /// 拍照按钮
   Widget shootingButton(BoxConstraints constraints) {
-    const Size outerSize = Size.square(75);
-    const Size innerSize = Size.square(75);
+    const Size outerSize = Size.square(112);
+    const Size innerSize = Size.square(112);
     return Listener(
       behavior: HitTestBehavior.opaque,
       onPointerUp: enableRecording ? recordDetectionCancel : null,
@@ -1080,16 +1112,21 @@ class CameraPickerState extends State<CameraPicker>
                   height: isShootingButtonAnimate
                       ? outerSize.height
                       : innerSize.height,
-                  padding: EdgeInsets.all(isShootingButtonAnimate ? 10 : 6),
+                  padding: EdgeInsets.all(isShootingButtonAnimate ? 12 : 24),
                   decoration: BoxDecoration(
-                    color: theme.canvasColor.withOpacity(0.85),
+                    color: Colors.transparent,
                     shape: BoxShape.circle,
                   ),
-                  child: DecoratedBox(
+                  child: Container(
                     decoration: BoxDecoration(
-                      color: C.themeColor.withOpacity(0.4),
-                      shape: BoxShape.circle,
-                    ),
+                        color: Theme.of(context).primaryColor,
+                        shape: BoxShape.circle),
+                    child: DecoratedBox(
+                        decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.3)))),
                   ),
                 ),
               ),
@@ -1100,7 +1137,7 @@ class CameraPickerState extends State<CameraPicker>
                   duration: maximumRecordingDuration!,
                   outerRadius: outerSize.width,
                   ringsWidth: 1.0,
-                  ringsColor: C.themeColor,
+                  ringsColor: Theme.of(context).primaryColor,
                 ),
               ),
             ],
@@ -1312,7 +1349,10 @@ class CameraPickerState extends State<CameraPicker>
         onScaleUpdate: enablePinchToZoom ? _handleScaleUpdate : null,
         // Enabled cameras switching by default if we have multiple cameras.
         onDoubleTap: cameras.length > 1 ? switchCameras : null,
-        child: CameraPreview(controller),
+        child: ClipRRect(
+          child: CameraPreview(controller),
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
       ),
     );
 
@@ -1320,7 +1360,7 @@ class CameraPickerState extends State<CameraPicker>
     if (scale == _PreviewScaleType.none) {
       return _preview;
     }
-
+    return _preview;
     double _width;
     double _height;
     switch (scale) {
@@ -1402,26 +1442,33 @@ class CameraPickerState extends State<CameraPicker>
     required CameraValue value,
     required BoxConstraints constraints,
   }) {
-    return AspectRatio(
-      aspectRatio: value.aspectRatio,
-      child: RepaintBoundary(
-        child: Stack(
-          alignment: AlignmentDirectional.center,
-          children: <Widget>[
-            Positioned.fill(
-              child: _cameraPreview(
-                context,
-                orientation: value.deviceOrientation,
-                constraints: constraints,
+    final _PreviewScaleType scale = _effectiveScaleType(constraints);
+    return Container(
+      child: AspectRatio(
+        aspectRatio:
+            scale == _PreviewScaleType.height
+                ? 1 /value.aspectRatio
+                :  value.aspectRatio,
+        child: RepaintBoundary(
+          child: Stack(
+            alignment: AlignmentDirectional.center,
+            children: <Widget>[
+              Positioned.fill(
+                child: _cameraPreview(
+                  context,
+                  orientation: value.deviceOrientation,
+                  constraints: constraints,
+                ),
               ),
-            ),
-            if (toggleGrid) _buildOverlayGrid(context),
-            if (toggleCrop) _buildOverlayCrop(context),
-            if (widget.foregroundBuilder != null)
-              Positioned.fill(child: widget.foregroundBuilder!(value)),
-          ],
+              if (toggleGrid) _buildOverlayGrid(context),
+              if (toggleCrop) _buildOverlayCrop(context),
+              if (widget.foregroundBuilder != null)
+                Positioned.fill(child: widget.foregroundBuilder!(value)),
+            ],
+          ),
         ),
       ),
+      alignment: Alignment.center,
     );
   }
 
@@ -1457,6 +1504,23 @@ class CameraPickerState extends State<CameraPicker>
                       fit: StackFit.expand,
                       alignment: Alignment.center,
                       children: [
+                        Positioned(
+                          top: 0,
+                          bottom: 0,
+                          width: MediaQuery.of(context).size.width,
+                          child: _initializeWrapper(
+                            builder: (CameraValue value, __) {
+                              if (value.isInitialized) {
+                                return _cameraBuilder(
+                                  context: c,
+                                  value: value,
+                                  constraints: constraints,
+                                );
+                              }
+                              return const SizedBox.expand();
+                            },
+                          ),
+                        ),
                         Positioned(
                           top: 0,
                           bottom: 0,
@@ -1529,7 +1593,7 @@ class CameraPickerState extends State<CameraPicker>
             child: Center(
               child: Container(
                 width: size.width,
-                height: size.width / Config.aspectRatio,
+                height: double.infinity,
                 child: CustomPaint(
                   painter: GridLine(),
                 ),
@@ -1539,7 +1603,7 @@ class CameraPickerState extends State<CameraPicker>
         : IgnorePointer(
             child: Center(
               child: Container(
-                width: size.width * Config.aspectRatioLandscape,
+                width: double.infinity,
                 height: size.width,
                 child: CustomPaint(
                   painter: GridLine(),
