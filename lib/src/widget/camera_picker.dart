@@ -10,6 +10,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:wechat_camera_picker/src/constants/config.dart';
 import 'package:wechat_camera_picker/src/widget/aspect_ratio_mark.dart';
+import 'package:wechat_camera_picker/src/widget/blendmask.dart';
 import 'package:wechat_camera_picker/wechat_camera_picker.dart';
 import '../constants/constants.dart';
 import '../widget/circular_progress_bar.dart';
@@ -919,7 +920,8 @@ class CameraPickerState extends State<CameraPicker>
                 'Back',
                 style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Nunito',
                     fontSize: 14.0),
               )
             ],
@@ -934,7 +936,11 @@ class CameraPickerState extends State<CameraPicker>
   Widget get _switchCamerasButton {
     return IconButton(
       onPressed: switchCameras,
-      icon: Icon(Icons.loop_outlined, size: 32),
+      icon: BlendMask(
+        blendMode: BlendMode.screen,
+        child: Image.asset('assets/camera_rotate_button.png',
+            package: 'wechat_camera_picker'),
+      ),
     );
   }
 
@@ -958,10 +964,10 @@ class CameraPickerState extends State<CameraPicker>
           toggleGrid = !toggleGrid;
         });
       },
-      icon: Icon(
-        Icons.grid_on_outlined,
-        size: 32,
-        color: toggleGrid ? Theme.of(context).primaryColor : Colors.white,
+      icon: BlendMask(
+        blendMode: BlendMode.screen,
+        child: Image.asset('assets/grid_button.png',
+            package: 'wechat_camera_picker'),
       ),
     );
   }
@@ -1015,8 +1021,11 @@ class CameraPickerState extends State<CameraPicker>
             height: 56,
             alignment: Alignment.center,
             margin: EdgeInsets.only(left: 24),
-            decoration:
-                BoxDecoration(shape: BoxShape.circle, color: Color(0xff999999)),
+            decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: toggleGrid
+                    ? Theme.of(context).primaryColor
+                    : Color(0xff999999)),
           ),
           Container(
             width: 112,
@@ -1445,10 +1454,9 @@ class CameraPickerState extends State<CameraPicker>
     final _PreviewScaleType scale = _effectiveScaleType(constraints);
     return Container(
       child: AspectRatio(
-        aspectRatio:
-            scale == _PreviewScaleType.height
-                ? 1 /value.aspectRatio
-                :  value.aspectRatio,
+        aspectRatio: scale == _PreviewScaleType.height
+            ? 1 / value.aspectRatio
+            : value.aspectRatio,
         child: RepaintBoundary(
           child: Stack(
             alignment: AlignmentDirectional.center,
@@ -1468,7 +1476,8 @@ class CameraPickerState extends State<CameraPicker>
           ),
         ),
       ),
-      alignment: Alignment.center,
+      alignment:
+          isPortrait(context) ? Alignment.bottomCenter : Alignment.centerRight,
     );
   }
 
