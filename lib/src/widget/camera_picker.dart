@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -809,6 +808,21 @@ class CameraPickerState extends State<CameraPicker>
     }
   }
 
+// Orientation of android MediaStore. See ORIENTATION Example values for android: 0 90 180 270
+  int toOrientationValue(DeviceOrientation value) {
+    switch (value) {
+      case DeviceOrientation.portraitUp:
+        return 90;
+      case DeviceOrientation.portraitDown:
+        return 270;
+      case DeviceOrientation.landscapeLeft:
+        return 180;
+      case DeviceOrientation.landscapeRight:
+      default:
+        return 0;
+    }
+  }
+
   /// Stop the recording process.
   /// 停止录制视频
   Future<void> stopRecordingVideo() async {
@@ -819,6 +833,8 @@ class CameraPickerState extends State<CameraPicker>
     }
 
     if (controller.value.isRecordingVideo) {
+      //
+      final _orientation = controller.value.deviceOrientation;
       controller.stopVideoRecording().then((XFile file) async {
         final AssetEntity? entity = await CameraPickerViewer.pushToViewer(
           context,
@@ -829,6 +845,10 @@ class CameraPickerState extends State<CameraPicker>
           shouldDeletePreviewFile: shouldDeletePreviewFile,
         );
         if (entity != null) {
+          // Fix android video
+          if (Platform.isAndroid) {
+            entity.orientation = toOrientationValue(_orientation);
+          }
           Navigator.of(context).pop(entity);
         }
       }).catchError((Object e) {
