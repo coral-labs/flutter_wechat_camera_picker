@@ -378,7 +378,7 @@ class CameraPickerState extends State<CameraPicker>
   ThemeData get theme => _theme;
 
   bool _isPreparedForIOSRecording = false;
-
+  static const headerHeight = 100.0;
   @override
   void initState() {
     super.initState();
@@ -440,21 +440,6 @@ class CameraPickerState extends State<CameraPicker>
       controller.dispose();
     } else if (state == AppLifecycleState.resumed) {
       initCameras(currentCamera);
-    }
-  }
-
-  /// Adjust the proper scale type according to the [controller].
-  /// 通过 [controller] 的预览大小，判断相机预览适用的缩放类型。
-  _PreviewScaleType _effectiveScaleType(BoxConstraints constraints) {
-    final Size _size = controller.value.previewSize!;
-    final Size _scaledSize =
-        _size * constraints.maxWidth * Screens.scale / _size.height;
-    if (_scaledSize.width > constraints.maxHeight * Screens.scale) {
-      return _PreviewScaleType.width;
-    } else if (_scaledSize.width < constraints.maxHeight * Screens.scale) {
-      return _PreviewScaleType.height;
-    } else {
-      return _PreviewScaleType.none;
     }
   }
 
@@ -886,7 +871,7 @@ class CameraPickerState extends State<CameraPicker>
           return const SizedBox.shrink();
         }
         return Container(
-          height: 100,
+          height: headerHeight,
           child: Row(
             children: <Widget>[
               backButtonText,
@@ -941,19 +926,6 @@ class CameraPickerState extends State<CameraPicker>
         child: Image.asset('assets/camera_rotate_button.png',
             package: 'wechat_camera_picker'),
       ),
-    );
-  }
-
-  Widget get _cropIconButton {
-    return IconButton(
-      onPressed: () {
-        setState(() {
-          toggleCrop = !toggleCrop;
-        });
-      },
-      icon: Icon(Platform.isIOS ? Icons.crop_outlined : Icons.crop_outlined,
-          size: 32,
-          color: toggleCrop ? Theme.of(context).primaryColor : Colors.white),
     );
   }
 
@@ -1040,29 +1012,6 @@ class CameraPickerState extends State<CameraPicker>
             margin: EdgeInsets.only(right: 24),
             decoration:
                 BoxDecoration(shape: BoxShape.circle, color: Color(0xff999999)),
-          ),
-        ],
-      ),
-    );
-    return SizedBox(
-      child: Column(
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _girdIconButton,
-              _cropIconButton,
-              _switchCamerasButton,
-            ],
-          ),
-          const SizedBox(height: 15),
-          Center(
-            child: Container(
-              margin: const EdgeInsets.all(8.0),
-              width: 80,
-              alignment: Alignment.center,
-              child: Center(child: shootingButton(constraints)),
-            ),
           ),
         ],
       ),
@@ -1350,7 +1299,7 @@ class CameraPickerState extends State<CameraPicker>
     required DeviceOrientation orientation,
     required BoxConstraints constraints,
   }) {
-    Widget _preview = Listener(
+    return Listener(
       onPointerDown: (_) => _pointers++,
       onPointerUp: (_) => _pointers--,
       child: GestureDetector(
@@ -1364,67 +1313,6 @@ class CameraPickerState extends State<CameraPicker>
         ),
       ),
     );
-
-    final _PreviewScaleType scale = _effectiveScaleType(constraints);
-    if (scale == _PreviewScaleType.none) {
-      return _preview;
-    }
-    return _preview;
-    double _width;
-    double _height;
-    switch (scale) {
-      case _PreviewScaleType.width:
-        _width = constraints.maxWidth;
-        if (constraints.maxWidth <= constraints.maxHeight) {
-          _height = constraints.maxWidth * controller.value.aspectRatio;
-        } else {
-          _height = constraints.maxWidth / controller.value.aspectRatio;
-        }
-        break;
-      case _PreviewScaleType.height:
-        _width = constraints.maxHeight / controller.value.aspectRatio;
-        _height = constraints.maxHeight;
-        break;
-      default:
-        _width = constraints.maxWidth;
-        _height = constraints.maxHeight;
-        break;
-    }
-    final double _offsetHorizontal = (_width - constraints.maxWidth).abs() / -2;
-    final double _offsetVertical = (_height - constraints.maxHeight).abs() / -2;
-    // Flip the preview if the user is using a front camera to match the result.
-    if (currentCamera.lensDirection == CameraLensDirection.front) {
-      _preview = Transform(
-        transform: Matrix4.rotationY(0),
-        alignment: Alignment.center,
-        child: _preview,
-      );
-    }
-    _preview = Stack(
-      children: <Widget>[
-        Positioned(
-          left: _offsetHorizontal,
-          right: _offsetHorizontal,
-          top: _offsetVertical,
-          bottom: _offsetVertical,
-          child: RotatedBox(
-            quarterTurns: -widget.cameraQuarterTurns,
-            child: _preview,
-          ),
-        ),
-        if (isPortrait(context))
-          Positioned.fill(
-              child: AspectRatioMark(
-            Config.aspectRatio,
-          ))
-        else
-          Positioned.fill(
-              child: AspectRatioMark(
-            Config.aspectRatioLandscape,
-          )),
-      ],
-    );
-    return _preview;
   }
 
   Widget _initializeWrapper({
@@ -1451,29 +1339,27 @@ class CameraPickerState extends State<CameraPicker>
     required CameraValue value,
     required BoxConstraints constraints,
   }) {
-    final _PreviewScaleType scale = _effectiveScaleType(constraints);
+    const headerPadding = headerHeight + 16;
     return Container(
-      child: AspectRatio(
-        aspectRatio: scale == _PreviewScaleType.height
-            ? 1 / value.aspectRatio
-            : value.aspectRatio,
-        child: RepaintBoundary(
-          child: Stack(
-            alignment: AlignmentDirectional.center,
-            children: <Widget>[
-              Positioned.fill(
-                child: _cameraPreview(
-                  context,
-                  orientation: value.deviceOrientation,
-                  constraints: constraints,
-                ),
+      margin: isPortrait(context)
+          ? EdgeInsets.only(top: headerPadding)
+          : EdgeInsets.only(left: headerPadding),
+      child: RepaintBoundary(
+        child: Stack(
+          alignment: AlignmentDirectional.center,
+          children: <Widget>[
+            Positioned.fill(
+              child: _cameraPreview(
+                context,
+                orientation: value.deviceOrientation,
+                constraints: constraints,
               ),
-              if (toggleGrid) _buildOverlayGrid(context),
-              if (toggleCrop) _buildOverlayCrop(context),
-              if (widget.foregroundBuilder != null)
-                Positioned.fill(child: widget.foregroundBuilder!(value)),
-            ],
-          ),
+            ),
+            if (toggleGrid) _buildOverlayGrid(context),
+            if (toggleCrop) _buildOverlayCrop(context),
+            if (widget.foregroundBuilder != null)
+              Positioned.fill(child: widget.foregroundBuilder!(value)),
+          ],
         ),
       ),
       alignment:
@@ -1651,5 +1537,3 @@ class CameraPickerState extends State<CameraPicker>
           );
   }
 }
-
-enum _PreviewScaleType { none, width, height }
