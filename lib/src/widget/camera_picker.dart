@@ -795,21 +795,6 @@ class CameraPickerState extends State<CameraPicker>
     }
   }
 
-// Orientation of android MediaStore. See ORIENTATION Example values for android: 0 90 180 270
-  int toOrientationValue(DeviceOrientation value) {
-    switch (value) {
-      case DeviceOrientation.portraitUp:
-        return 90;
-      case DeviceOrientation.portraitDown:
-        return 270;
-      case DeviceOrientation.landscapeLeft:
-        return 180;
-      case DeviceOrientation.landscapeRight:
-      default:
-        return 0;
-    }
-  }
-
   /// Stop the recording process.
   /// 停止录制视频
   Future<void> stopRecordingVideo() async {
@@ -833,10 +818,10 @@ class CameraPickerState extends State<CameraPicker>
         );
         if (entity != null) {
           // Fix android video
-          if (Platform.isAndroid) {
-            entity.orientation = toOrientationValue(_orientation);
-          }
-          Navigator.of(context).pop(entity);
+          Navigator.of(context).pop({
+            'entity': entity,
+            'orientation': Platform.isAndroid ? _orientation : null
+          });
         }
       }).catchError((Object e) {
         realDebugPrint('Error when stop recording video: $e');
