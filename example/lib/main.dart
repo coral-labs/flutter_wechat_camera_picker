@@ -45,7 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final AssetEntity? _entity = await CameraPicker.pickFromCamera(
       context,
       enableRecording: true,
-    );
+    ) as AssetEntity?;
     if (_entity != null && entity != _entity) {
       entity = _entity;
       if (mounted) {

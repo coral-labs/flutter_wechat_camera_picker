@@ -122,7 +122,7 @@ class CameraPicker extends StatefulWidget {
 
   /// Static method to create [AssetEntity] through camera.
   /// 通过相机创建 [AssetEntity] 的静态方法
-  static Future<AssetEntity?> pickFromCamera(
+  static Future pickFromCamera(
     BuildContext context, {
     bool enableRecording = false,
     bool onlyEnableRecording = false,
