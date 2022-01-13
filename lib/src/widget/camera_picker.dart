@@ -57,6 +57,7 @@ class CameraPicker extends StatefulWidget {
             ? DefaultCameraPickerTextDelegateWithRecording()
             : DefaultCameraPickerTextDelegate());
   }
+  static DeviceOrientation? lastOrientationRecord;
 
   /// The number of clockwise quarter turns the camera view should be rotated.
   /// 摄像机视图顺时针旋转次数，每次90度
@@ -122,7 +123,7 @@ class CameraPicker extends StatefulWidget {
 
   /// Static method to create [AssetEntity] through camera.
   /// 通过相机创建 [AssetEntity] 的静态方法
-  static Future pickFromCamera(
+  static Future<AssetEntity?> pickFromCamera(
     BuildContext context, {
     bool enableRecording = false,
     bool onlyEnableRecording = false,
@@ -806,7 +807,7 @@ class CameraPickerState extends State<CameraPicker>
 
     if (controller.value.isRecordingVideo) {
       //
-      final _orientation = controller.value.deviceOrientation;
+      CameraPicker.lastOrientationRecord = controller.value.deviceOrientation;
       controller.stopVideoRecording().then((XFile file) async {
         final AssetEntity? entity = await CameraPickerViewer.pushToViewer(
           context,
@@ -817,11 +818,8 @@ class CameraPickerState extends State<CameraPicker>
           shouldDeletePreviewFile: shouldDeletePreviewFile,
         );
         if (entity != null) {
-          // Fix android video
-          Navigator.of(context).pop({
-            'entity': entity,
-            'orientation': Platform.isAndroid ? _orientation : null
-          });
+          // Fix android video orientation
+          Navigator.of(context).pop(entity);
         }
       }).catchError((Object e) {
         realDebugPrint('Error when stop recording video: $e');
