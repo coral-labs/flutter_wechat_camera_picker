@@ -709,6 +709,7 @@ class CameraPickerState extends State<CameraPicker>
     if (controller.value.isInitialized && !controller.value.isTakingPicture) {
       final XFile _file = await controller.takePicture();
       // Delay disposing the controller to hold the preview.
+      CameraPicker.lastOrientationRecord = controller.value.deviceOrientation;
       Future<void>.delayed(const Duration(milliseconds: 500), () {
         controller.dispose();
       });
