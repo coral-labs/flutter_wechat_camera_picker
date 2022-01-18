@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:wechat_camera_picker/src/constants/config.dart';
 import 'package:wechat_camera_picker/src/widget/aspect_ratio_mark.dart';
 import 'package:wechat_camera_picker/src/widget/blendmask.dart';
+import 'package:wechat_camera_picker/src/widget/overlay_mask.dart';
 import 'package:wechat_camera_picker/wechat_camera_picker.dart';
 import '../constants/constants.dart';
 import '../widget/circular_progress_bar.dart';
@@ -252,11 +253,9 @@ class CameraPickerState extends State<CameraPicker>
   bool toggleCrop = false;
 
   double get currentAspectRatio =>
-      toggleCrop ? Config.cropAspectRatio : Config.aspectRatio;
+      onlyEnableRecording ? Config.videoAspectRatio : Config.imageAspectRatio;
 
-  double get currentAspectRatioLandscape => toggleCrop
-      ? Config.cropAspectRatioLandscape
-      : Config.aspectRatioLandscape;
+  Alignment get currentAlignment => Alignment.topLeft;
 
   bool isPortrait(BuildContext context) =>
       MediaQuery.of(context).orientation == Orientation.portrait;
@@ -379,7 +378,12 @@ class CameraPickerState extends State<CameraPicker>
   ThemeData get theme => _theme;
 
   bool _isPreparedForIOSRecording = false;
-  static const headerHeight = 100.0;
+  double getHeaderPadding(BuildContext context) =>
+      isPortrait(context) ? 84.0 : 100.0;
+
+  EdgeInsets getCameraPadding(BuildContext context) => isPortrait(context)
+      ? EdgeInsets.only(top: getHeaderPadding(context))
+      : EdgeInsets.only(left: getHeaderPadding(context));
   @override
   void initState() {
     super.initState();
@@ -441,6 +445,21 @@ class CameraPickerState extends State<CameraPicker>
       controller.dispose();
     } else if (state == AppLifecycleState.resumed) {
       initCameras(currentCamera);
+    }
+  }
+
+  /// Adjust the proper scale type according to the [controller].
+  /// 通过 [controller] 的预览大小，判断相机预览适用的缩放类型。
+  _PreviewScaleType _effectiveScaleType(BoxConstraints constraints) {
+    final Size _size = controller.value.previewSize!;
+    final Size _scaledSize =
+        _size * constraints.maxWidth * Screens.scale / _size.height;
+    if (_scaledSize.width > constraints.maxHeight * Screens.scale) {
+      return _PreviewScaleType.width;
+    } else if (_scaledSize.width < constraints.maxHeight * Screens.scale) {
+      return _PreviewScaleType.height;
+    } else {
+      return _PreviewScaleType.none;
     }
   }
 
@@ -721,7 +740,7 @@ class CameraPickerState extends State<CameraPicker>
         theme: theme,
         shouldDeletePreviewFile: shouldDeletePreviewFile,
         onEntitySaving: widget.onEntitySaving,
-        aspectRatio: Config.aspectRatio,
+        aspectRatio: Config.imageAspectRatio,
       );
       if (entity != null) {
         Navigator.of(context).pop(entity);
@@ -854,14 +873,17 @@ class CameraPickerState extends State<CameraPicker>
         if (v.isRecordingVideo) {
           return const SizedBox.shrink();
         }
-        return Container(
-          height: headerHeight,
-          child: Row(
-            children: <Widget>[
-              backButtonText,
-              const Spacer(),
-              switchFlashesButton(v),
-            ],
+        return SizedBox(
+          height: getHeaderPadding(context),
+          child: Align(
+            alignment: currentAlignment,
+            child: Row(
+              children: <Widget>[
+                backButtonText,
+                const Spacer(),
+                switchFlashesButton(v),
+              ],
+            ),
           ),
         );
       },
@@ -913,6 +935,33 @@ class CameraPickerState extends State<CameraPicker>
     );
   }
 
+  Widget get _cropIconButton {
+    return IconButton(
+      onPressed: () {
+        setState(() {
+          toggleCrop = !toggleCrop;
+        });
+      },
+      icon: Stack(
+        children: [
+          BlendMask(
+            blendMode: BlendMode.screen,
+            child: Image.asset('assets/crop_button.png',
+                package: 'wechat_camera_picker'),
+          ),
+          if (toggleCrop)
+            BlendMask(
+              blendMode: BlendMode.multiply,
+              child: Container(
+                margin: EdgeInsets.all(1),
+                color: Theme.of(context).primaryColor,
+              ),
+            )
+        ],
+      ),
+    );
+  }
+
   Widget get _girdIconButton {
     return IconButton(
       onPressed: () {
@@ -920,10 +969,22 @@ class CameraPickerState extends State<CameraPicker>
           toggleGrid = !toggleGrid;
         });
       },
-      icon: BlendMask(
-        blendMode: BlendMode.screen,
-        child: Image.asset('assets/grid_button.png',
-            package: 'wechat_camera_picker'),
+      icon: Stack(
+        children: [
+          BlendMask(
+            blendMode: BlendMode.screen,
+            child: Image.asset('assets/grid_button.png',
+                package: 'wechat_camera_picker'),
+          ),
+          if (toggleGrid)
+            BlendMask(
+              blendMode: BlendMode.multiply,
+              child: Container(
+                margin: EdgeInsets.all(1),
+                color: Theme.of(context).primaryColor,
+              ),
+            )
+        ],
       ),
     );
   }
@@ -967,35 +1028,56 @@ class CameraPickerState extends State<CameraPicker>
     CameraController? controller,
     BoxConstraints constraints,
   ) {
+    if (onlyEnableRecording) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              child: _girdIconButton,
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              margin: EdgeInsets.only(left: 24),
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: toggleGrid
+                      ? Theme.of(context).primaryColor
+                      : Color(0xff999999)),
+            ),
+            Container(
+              width: 112,
+              alignment: Alignment.center,
+              child: Center(child: shootingButton(constraints)),
+            ),
+            Container(
+              child: _switchCamerasButton,
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              margin: EdgeInsets.only(right: 24),
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle, color: Color(0xff999999)),
+            ),
+          ],
+        ),
+      );
+    }
     return SizedBox(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            child: _girdIconButton,
-            width: 56,
-            height: 56,
-            alignment: Alignment.center,
-            margin: EdgeInsets.only(left: 24),
-            decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: toggleGrid
-                    ? Theme.of(context).primaryColor
-                    : Color(0xff999999)),
+      child: Column(
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _girdIconButton,
+              _cropIconButton,
+              _switchCamerasButton,
+            ],
           ),
-          Container(
-            width: 112,
-            alignment: Alignment.center,
-            child: Center(child: shootingButton(constraints)),
-          ),
-          Container(
-            child: _switchCamerasButton,
-            width: 56,
-            height: 56,
-            alignment: Alignment.center,
-            margin: EdgeInsets.only(right: 24),
-            decoration:
-                BoxDecoration(shape: BoxShape.circle, color: Color(0xff999999)),
+          const SizedBox(height: 15),
+          Center(
+            child: shootingButton(constraints),
           ),
         ],
       ),
@@ -1283,7 +1365,7 @@ class CameraPickerState extends State<CameraPicker>
     required DeviceOrientation orientation,
     required BoxConstraints constraints,
   }) {
-    return Listener(
+    Widget _preview = Listener(
       onPointerDown: (_) => _pointers++,
       onPointerUp: (_) => _pointers--,
       child: GestureDetector(
@@ -1291,12 +1373,79 @@ class CameraPickerState extends State<CameraPicker>
         onScaleUpdate: enablePinchToZoom ? _handleScaleUpdate : null,
         // Enabled cameras switching by default if we have multiple cameras.
         onDoubleTap: cameras.length > 1 ? switchCameras : null,
-        child: ClipRRect(
-          child: CameraPreview(controller),
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+        child: AspectRatio(
+          aspectRatio: currentAspectRatio,
+          child: ClipRRect(
+            child: CameraPreview(controller),
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
         ),
       ),
     );
+    final _PreviewScaleType scale = _effectiveScaleType(constraints);
+    if (scale == _PreviewScaleType.none) {
+      return _preview;
+    }
+    double _width;
+    double _height;
+    switch (scale) {
+      case _PreviewScaleType.width:
+        _width = constraints.maxWidth;
+        if (constraints.maxWidth <= constraints.maxHeight) {
+          _height = constraints.maxWidth * controller.value.aspectRatio;
+        } else {
+          _height = constraints.maxWidth / controller.value.aspectRatio;
+        }
+        break;
+      case _PreviewScaleType.height:
+        _width = constraints.maxHeight / controller.value.aspectRatio;
+        _height = constraints.maxHeight;
+        break;
+      default:
+        _width = constraints.maxWidth;
+        _height = constraints.maxHeight;
+        break;
+    }
+    final double _offsetHorizontal = (_width - constraints.maxWidth).abs() / -2;
+    final double _offsetVertical = (_height - constraints.maxHeight).abs() / -2;
+    // Flip the preview if the user is using a front camera to match the result.
+    if (currentCamera.lensDirection == CameraLensDirection.front) {
+      _preview = Transform(
+        transform: Matrix4.rotationY(0),
+        alignment: Alignment.center,
+        child: _preview,
+      );
+    }
+    final offsetLeft = !isPortrait(context) && onlyEnableRecording
+        ? getHeaderPadding(context)
+        : 0;
+    final offsetTop = isPortrait(context) && onlyEnableRecording
+        ? getHeaderPadding(context)
+        : 0;
+    _preview = Stack(
+      children: <Widget>[
+        Positioned(
+          left: _offsetHorizontal + offsetLeft,
+          right: _offsetHorizontal,
+          top: _offsetVertical + offsetTop,
+          bottom: _offsetVertical,
+          child: RotatedBox(
+            quarterTurns: -widget.cameraQuarterTurns,
+            child: _preview,
+          ),
+        ),
+        Positioned.fill(
+            child: OverlayMask(
+                padding: getCameraPadding(context),
+                aspectRatio: isPortrait(context)
+                    ? currentAspectRatio
+                    : 1 / currentAspectRatio,
+                alignment: currentAlignment,
+                borderRadius:
+                    onlyEnableRecording ? BorderRadius.circular(16) : null))
+      ],
+    );
+    return _preview;
   }
 
   Widget _initializeWrapper({
@@ -1310,12 +1459,12 @@ class CameraPickerState extends State<CameraPicker>
         builder: (_, CameraValue value, Widget? w) {
           return isInitialized?.call() ?? value.isInitialized
               ? builder(value, w)
-              : const SizedBox.shrink();
+              : SizedBox(height: getHeaderPadding(context));
         },
         child: child,
       );
     }
-    return const SizedBox.shrink();
+    return SizedBox(height: getHeaderPadding(context));
   }
 
   Widget _cameraBuilder({
@@ -1323,11 +1472,8 @@ class CameraPickerState extends State<CameraPicker>
     required CameraValue value,
     required BoxConstraints constraints,
   }) {
-    const headerPadding = headerHeight + 16;
-    return Container(
-      margin: isPortrait(context)
-          ? EdgeInsets.only(top: headerPadding)
-          : EdgeInsets.only(left: headerPadding),
+    return AspectRatio(
+      aspectRatio: value.aspectRatio,
       child: RepaintBoundary(
         child: Stack(
           alignment: AlignmentDirectional.center,
@@ -1339,15 +1485,12 @@ class CameraPickerState extends State<CameraPicker>
                 constraints: constraints,
               ),
             ),
-            if (toggleGrid) _buildOverlayGrid(context),
-            if (toggleCrop) _buildOverlayCrop(context),
+            _buildOverlay(context),
             if (widget.foregroundBuilder != null)
               Positioned.fill(child: widget.foregroundBuilder!(value)),
           ],
         ),
       ),
-      alignment:
-          isPortrait(context) ? Alignment.bottomCenter : Alignment.centerRight,
     );
   }
 
@@ -1356,9 +1499,12 @@ class CameraPickerState extends State<CameraPicker>
       quarterTurns: isPortrait(context) ? 0 : 3,
       child: Column(
         children: <Widget>[
-          const SizedBox(height: 25),
+          const SizedBox(height: 16),
           settingsAction,
-          const Spacer(),
+          if (onlyEnableRecording)
+            Spacer()
+          else
+            AspectRatio(aspectRatio: currentAspectRatio),
           shootingActions(context, _controller, constraints),
         ],
       ),
@@ -1383,23 +1529,6 @@ class CameraPickerState extends State<CameraPicker>
                       fit: StackFit.expand,
                       alignment: Alignment.center,
                       children: [
-                        Positioned(
-                          top: 0,
-                          bottom: 0,
-                          width: MediaQuery.of(context).size.width,
-                          child: _initializeWrapper(
-                            builder: (CameraValue value, __) {
-                              if (value.isInitialized) {
-                                return _cameraBuilder(
-                                  context: c,
-                                  value: value,
-                                  constraints: constraints,
-                                );
-                              }
-                              return const SizedBox.expand();
-                            },
-                          ),
-                        ),
                         Positioned(
                           top: 0,
                           bottom: 0,
@@ -1465,59 +1594,49 @@ class CameraPickerState extends State<CameraPicker>
     );
   }
 
-  Widget _buildOverlayGrid(BuildContext context) {
+  Widget _buildOverlay(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return isPortrait(context)
-        ? IgnorePointer(
-            child: Center(
-              child: Container(
-                width: size.width,
-                height: double.infinity,
-                child: CustomPaint(
-                  painter: GridLine(),
-                ),
-              ),
-            ),
-          )
-        : IgnorePointer(
-            child: Center(
-              child: Container(
-                width: double.infinity,
-                height: size.width,
-                child: CustomPaint(
-                  painter: GridLine(),
-                ),
-              ),
-            ),
-          );
+    return IgnorePointer(
+      child: Container(
+        margin: getCameraPadding(context),
+        alignment: currentAlignment,
+        child: Container(
+          width: isPortrait(context)
+              ? size.width
+              : size.height / currentAspectRatio,
+          height: isPortrait(context)
+              ? size.width / currentAspectRatio
+              : size.width,
+          child: _buildOverlayCrop(
+            context,
+            _buildOverlayGrid(context),
+          ),
+        ),
+      ),
+    );
   }
 
-  Widget _buildOverlayCrop(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    return isPortrait(context)
-        ? IgnorePointer(
-            child: Center(
-              child: SizedBox(
-                width: size.width,
-                height: size.width / Config.aspectRatio,
-                child: AspectRatioMark(
-                  Config.cropAspectRatio,
-                  markColor: Colors.black.withOpacity(0.8),
-                ),
-              ),
-            ),
-          )
-        : IgnorePointer(
-            child: Center(
-              child: SizedBox(
-                width: size.width,
-                height: size.width / Config.aspectRatioLandscape,
-                child: AspectRatioMark(
-                  Config.cropAspectRatioLandscape,
-                  markColor: Colors.black.withOpacity(0.8),
-                ),
-              ),
-            ),
-          );
+  Widget _buildOverlayGrid(BuildContext context) {
+    if (!toggleGrid) {
+      return Container();
+    }
+    return CustomPaint(
+      painter: GridLine(),
+    );
+  }
+
+  Widget _buildOverlayCrop(BuildContext context, Widget child) {
+    if (!toggleCrop) {
+      return child;
+    }
+    return IgnorePointer(
+      child: AspectRatioMark(
+        Config.cropAspectRatio,
+        markColor: Colors.black.withOpacity(0.8),
+        child: child,
+      ),
+    );
   }
 }
+
+enum _PreviewScaleType { none, width, height }

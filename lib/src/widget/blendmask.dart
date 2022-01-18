@@ -5,10 +5,12 @@ import 'package:flutter/widgets.dart';
 class BlendMask extends SingleChildRenderObjectWidget {
   final BlendMode _blendMode;
   final double _opacity;
+  final Color? color;
 
   const BlendMask(
       {required BlendMode blendMode,
       double opacity = 1.0,
+      this.color,
       Key? key,
       Widget? child})
       : _blendMode = blendMode,
@@ -17,7 +19,7 @@ class BlendMask extends SingleChildRenderObjectWidget {
 
   @override
   RenderObject createRenderObject(context) {
-    return RenderBlendMask(_blendMode, _opacity);
+    return RenderBlendMask(_blendMode, _opacity, color);
   }
 
   @override
@@ -30,9 +32,11 @@ class BlendMask extends SingleChildRenderObjectWidget {
 class RenderBlendMask extends RenderProxyBox {
   BlendMode _blendMode;
   double _opacity;
+  final Color? _color;
 
-  RenderBlendMask(BlendMode blendMode, double opacity)
+  RenderBlendMask(BlendMode blendMode, double opacity, Color? color)
       : _blendMode = blendMode,
+        _color = color,
         _opacity = opacity;
 
   @override
@@ -42,7 +46,8 @@ class RenderBlendMask extends RenderProxyBox {
         offset & size,
         Paint()
           ..blendMode = _blendMode
-          ..color = Color.fromARGB((_opacity * 255).round(), 255, 255, 255));
+          ..color = _color ??
+              Color.fromARGB((_opacity * 255).round(), 255, 255, 255));
 
     super.paint(context, offset);
 
