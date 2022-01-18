@@ -1,6 +1,5 @@
 class Config {
-  static const double aspectRatio = 3 / 4;
+  static const double imageAspectRatio = 3 / 4.0;
+  static const double videoAspectRatio = 9.0 / 16.0;
   static const double cropAspectRatio = 5 / 4;
-  static const double aspectRatioLandscape = 4 / 3;
-  static const double cropAspectRatioLandscape = 5 / 4;
 }
