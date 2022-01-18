@@ -870,21 +870,20 @@ class CameraPickerState extends State<CameraPicker>
   Widget get settingsAction {
     return _initializeWrapper(
       builder: (CameraValue v, __) {
-        if (v.isRecordingVideo) {
-          return const SizedBox.shrink();
-        }
         return SizedBox(
           height: getHeaderPadding(context),
-          child: Align(
-            alignment: currentAlignment,
-            child: Row(
-              children: <Widget>[
-                backButtonText,
-                const Spacer(),
-                switchFlashesButton(v),
-              ],
-            ),
-          ),
+          child: v.isRecordingVideo
+              ? null
+              : Align(
+                  alignment: currentAlignment,
+                  child: Row(
+                    children: <Widget>[
+                      backButtonText,
+                      const Spacer(),
+                      switchFlashesButton(v),
+                    ],
+                  ),
+                ),
         );
       },
     );
@@ -949,7 +948,7 @@ class CameraPickerState extends State<CameraPicker>
             child: Image.asset('assets/crop_button.png',
                 package: 'wechat_camera_picker'),
           ),
-          if (toggleCrop)
+          if (toggleCrop && !onlyEnableRecording)
             BlendMask(
               blendMode: BlendMode.multiply,
               child: Container(
@@ -976,7 +975,7 @@ class CameraPickerState extends State<CameraPicker>
             child: Image.asset('assets/grid_button.png',
                 package: 'wechat_camera_picker'),
           ),
-          if (toggleGrid)
+          if (toggleGrid && !onlyEnableRecording)
             BlendMask(
               blendMode: BlendMode.multiply,
               child: Container(
@@ -1373,13 +1372,7 @@ class CameraPickerState extends State<CameraPicker>
         onScaleUpdate: enablePinchToZoom ? _handleScaleUpdate : null,
         // Enabled cameras switching by default if we have multiple cameras.
         onDoubleTap: cameras.length > 1 ? switchCameras : null,
-        child: AspectRatio(
-          aspectRatio: currentAspectRatio,
-          child: ClipRRect(
-            child: CameraPreview(controller),
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-          ),
-        ),
+        child: CameraPreview(controller),
       ),
     );
     final _PreviewScaleType scale = _effectiveScaleType(constraints);
@@ -1426,9 +1419,9 @@ class CameraPickerState extends State<CameraPicker>
       children: <Widget>[
         Positioned(
           left: _offsetHorizontal + offsetLeft,
-          right: _offsetHorizontal,
+          right: _offsetHorizontal - offsetLeft,
           top: _offsetVertical + offsetTop,
-          bottom: _offsetVertical,
+          bottom: _offsetVertical - offsetTop,
           child: RotatedBox(
             quarterTurns: -widget.cameraQuarterTurns,
             child: _preview,
@@ -1502,10 +1495,19 @@ class CameraPickerState extends State<CameraPicker>
           const SizedBox(height: 16),
           settingsAction,
           if (onlyEnableRecording)
-            Spacer()
-          else
+            AspectRatio(
+              aspectRatio: currentAspectRatio,
+              child: Column(
+                children: [
+                  Spacer(),
+                  shootingActions(context, _controller, constraints)
+                ],
+              ),
+            )
+          else ...[
             AspectRatio(aspectRatio: currentAspectRatio),
-          shootingActions(context, _controller, constraints),
+            shootingActions(context, _controller, constraints)
+          ],
         ],
       ),
     );
