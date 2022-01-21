@@ -926,6 +926,7 @@ class CameraPickerState extends State<CameraPicker>
   Widget get _switchCamerasButton {
     return IconButton(
       onPressed: switchCameras,
+      iconSize: onlyEnableRecording ? 24 : 48,
       icon: BlendMask(
         blendMode: BlendMode.screen,
         child: Image.asset('assets/camera_rotate_button.png',
@@ -936,6 +937,7 @@ class CameraPickerState extends State<CameraPicker>
 
   Widget get _cropIconButton {
     return IconButton(
+      iconSize: onlyEnableRecording ? 24 : 48,
       onPressed: () {
         setState(() {
           toggleCrop = !toggleCrop;
@@ -968,6 +970,7 @@ class CameraPickerState extends State<CameraPicker>
           toggleGrid = !toggleGrid;
         });
       },
+      iconSize: onlyEnableRecording ? 24 : 48,
       icon: Stack(
         children: [
           BlendMask(
@@ -1074,7 +1077,6 @@ class CameraPickerState extends State<CameraPicker>
               _switchCamerasButton,
             ],
           ),
-          const SizedBox(height: 15),
           Center(
             child: shootingButton(constraints),
           ),
