@@ -181,7 +181,6 @@ class CameraPicker extends StatefulWidget {
   static ThemeData themeData(Color themeColor) {
     return ThemeData.dark().copyWith(
       primaryColor: Colors.grey[900],
-      primaryColorBrightness: Brightness.dark,
       primaryColorLight: Colors.grey[900],
       primaryColorDark: Colors.grey[900],
       canvasColor: Colors.grey[850],
@@ -206,9 +205,7 @@ class CameraPicker extends StatefulWidget {
       buttonTheme: ButtonThemeData(buttonColor: themeColor),
       colorScheme: ColorScheme(
         primary: Colors.grey[900]!,
-        primaryVariant: Colors.grey[900]!,
         secondary: themeColor,
-        secondaryVariant: themeColor,
         background: Colors.grey[900]!,
         surface: Colors.grey[900]!,
         brightness: Brightness.dark,
@@ -1377,6 +1374,36 @@ class CameraPickerState extends State<CameraPicker>
         child: CameraPreview(controller),
       ),
     );
+    // Flip the preview if the user is using a front camera to match the result.
+    if (currentCamera.lensDirection == CameraLensDirection.front) {
+      _preview = Transform(
+        transform: Matrix4.rotationY(0),
+        alignment: Alignment.center,
+        child: _preview,
+      );
+    }
+    if (!onlyEnableRecording) {
+      if (isPortrait(context)) {
+        return Stack(
+          children: [
+            Positioned(
+                top: getHeaderPadding(context),
+                width: constraints.maxWidth,
+                height: constraints.maxWidth * controller.value.aspectRatio,
+                child: _preview),
+          ],
+        );
+      }
+      return Stack(
+        children: [
+          Positioned(
+              left: getHeaderPadding(context),
+              height: constraints.maxHeight,
+              width: constraints.maxHeight * controller.value.aspectRatio,
+              child: _preview),
+        ],
+      );
+    }
     final _PreviewScaleType scale = _effectiveScaleType(constraints);
     if (scale == _PreviewScaleType.none) {
       return _preview;
@@ -1403,14 +1430,6 @@ class CameraPickerState extends State<CameraPicker>
     }
     final double _offsetHorizontal = (_width - constraints.maxWidth).abs() / -2;
     final double _offsetVertical = (_height - constraints.maxHeight).abs() / -2;
-    // Flip the preview if the user is using a front camera to match the result.
-    if (currentCamera.lensDirection == CameraLensDirection.front) {
-      _preview = Transform(
-        transform: Matrix4.rotationY(0),
-        alignment: Alignment.center,
-        child: _preview,
-      );
-    }
     final offsetLeft = !isPortrait(context) && onlyEnableRecording
         ? getHeaderPadding(context)
         : 0;
