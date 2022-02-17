@@ -11,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:wechat_camera_picker/src/constants/config.dart';
 import 'package:wechat_camera_picker/src/widget/aspect_ratio_mark.dart';
 import 'package:wechat_camera_picker/src/widget/blendmask.dart';
-import 'package:wechat_camera_picker/src/widget/overlay_mask.dart';
 import 'package:wechat_camera_picker/wechat_camera_picker.dart';
 import '../constants/constants.dart';
 import '../widget/circular_progress_bar.dart';
@@ -442,21 +441,6 @@ class CameraPickerState extends State<CameraPicker>
       controller.dispose();
     } else if (state == AppLifecycleState.resumed) {
       initCameras(currentCamera);
-    }
-  }
-
-  /// Adjust the proper scale type according to the [controller].
-  /// 通过 [controller] 的预览大小，判断相机预览适用的缩放类型。
-  _PreviewScaleType _effectiveScaleType(BoxConstraints constraints) {
-    final Size _size = controller.value.previewSize!;
-    final Size _scaledSize =
-        _size * constraints.maxWidth * Screens.scale / _size.height;
-    if (_scaledSize.width > constraints.maxHeight * Screens.scale) {
-      return _PreviewScaleType.width;
-    } else if (_scaledSize.width < constraints.maxHeight * Screens.scale) {
-      return _PreviewScaleType.height;
-    } else {
-      return _PreviewScaleType.none;
     }
   }
 
@@ -1372,7 +1356,9 @@ class CameraPickerState extends State<CameraPicker>
         onScaleUpdate: enablePinchToZoom ? _handleScaleUpdate : null,
         // Enabled cameras switching by default if we have multiple cameras.
         onDoubleTap: cameras.length > 1 ? switchCameras : null,
-        child: CameraPreview(controller),
+        child: ClipRRect(
+            borderRadius: BorderRadius.circular(onlyEnableRecording ? 16 : 0),
+            child: CameraPreview(controller)),
       ),
     );
     // Flip the preview if the user is using a front camera to match the result.
@@ -1383,84 +1369,26 @@ class CameraPickerState extends State<CameraPicker>
         child: _preview,
       );
     }
-    if (!onlyEnableRecording) {
-      if (isPortrait(context)) {
-        return Stack(
-          children: [
-            Positioned(
-                top: getHeaderPadding(context),
-                width: constraints.maxWidth,
-                height: constraints.maxWidth * controller.value.aspectRatio,
-                child: _preview),
-          ],
-        );
-      }
+    if (isPortrait(context)) {
       return Stack(
         children: [
           Positioned(
-              left: getHeaderPadding(context),
-              height: constraints.maxHeight,
-              width: constraints.maxHeight * controller.value.aspectRatio,
+              top: getHeaderPadding(context),
+              width: constraints.maxWidth,
+              height: constraints.maxWidth * controller.value.aspectRatio,
               child: _preview),
         ],
       );
     }
-    final _PreviewScaleType scale = _effectiveScaleType(constraints);
-    if (scale == _PreviewScaleType.none) {
-      return _preview;
-    }
-    double _width;
-    double _height;
-    switch (scale) {
-      case _PreviewScaleType.width:
-        _width = constraints.maxWidth;
-        if (constraints.maxWidth <= constraints.maxHeight) {
-          _height = constraints.maxWidth * controller.value.aspectRatio;
-        } else {
-          _height = constraints.maxWidth / controller.value.aspectRatio;
-        }
-        break;
-      case _PreviewScaleType.height:
-        _width = constraints.maxHeight / controller.value.aspectRatio;
-        _height = constraints.maxHeight;
-        break;
-      default:
-        _width = constraints.maxWidth;
-        _height = constraints.maxHeight;
-        break;
-    }
-    final double _offsetHorizontal = (_width - constraints.maxWidth).abs() / -2;
-    final double _offsetVertical = (_height - constraints.maxHeight).abs() / -2;
-    final offsetLeft = !isPortrait(context) && onlyEnableRecording
-        ? getHeaderPadding(context)
-        : 0;
-    final offsetTop = isPortrait(context) && onlyEnableRecording
-        ? getHeaderPadding(context)
-        : 0;
-    _preview = Stack(
-      children: <Widget>[
+    return Stack(
+      children: [
         Positioned(
-          left: _offsetHorizontal + offsetLeft,
-          right: _offsetHorizontal - offsetLeft,
-          top: _offsetVertical + offsetTop,
-          bottom: _offsetVertical - offsetTop,
-          child: RotatedBox(
-            quarterTurns: -widget.cameraQuarterTurns,
-            child: _preview,
-          ),
-        ),
-        Positioned.fill(
-            child: OverlayMask(
-                padding: getCameraPadding(context),
-                aspectRatio: isPortrait(context)
-                    ? currentAspectRatio
-                    : 1 / currentAspectRatio,
-                alignment: currentAlignment,
-                borderRadius:
-                    onlyEnableRecording ? BorderRadius.circular(16) : null))
+            left: getHeaderPadding(context),
+            height: constraints.maxHeight,
+            width: constraints.maxHeight * controller.value.aspectRatio,
+            child: _preview),
       ],
     );
-    return _preview;
   }
 
   Widget _initializeWrapper({
@@ -1662,5 +1590,3 @@ class CameraPickerState extends State<CameraPicker>
     );
   }
 }
-
-enum _PreviewScaleType { none, width, height }
