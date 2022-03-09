@@ -133,7 +133,7 @@ class CameraPicker extends StatefulWidget {
     bool enablePinchToZoom = true,
     bool enablePullToZoomInRecord = true,
     bool shouldDeletePreviewFile = false,
-    Duration maximumRecordingDuration = const Duration(seconds: 15),
+    Duration? maximumRecordingDuration = const Duration(seconds: 15),
     ThemeData? theme,
     int cameraQuarterTurns = 0,
     CameraPickerTextDelegate? textDelegate,
