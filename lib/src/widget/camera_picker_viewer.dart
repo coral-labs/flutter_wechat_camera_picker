@@ -154,6 +154,9 @@ class _CameraPickerViewerState extends State<CameraPickerViewer> {
 
   bool get shouldDeletePreviewFile => widget.shouldDeletePreviewFile;
 
+  bool isPortrait(BuildContext context) =>
+      MediaQuery.of(context).orientation == Orientation.portrait;
+
   @override
   void initState() {
     super.initState();
@@ -410,7 +413,9 @@ class _CameraPickerViewerState extends State<CameraPickerViewer> {
             ),
           if (widget.aspectRatio != null)
             Positioned.fill(
-              child: AspectRatioMark(widget.aspectRatio!),
+              child: AspectRatioMark(isPortrait(context)
+                  ? widget.aspectRatio!
+                  : 1 / (widget.aspectRatio!)),
             ),
           // Place the button before the actions to ensure it's not blocking.
           if (pickerType == CameraPickerViewType.video) playControlButton,
