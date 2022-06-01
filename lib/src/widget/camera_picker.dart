@@ -390,7 +390,7 @@ class CameraPickerState extends State<CameraPicker>
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-    WidgetsBinding.instance?.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
 
     // TODO(Alex): Currently hide status bar will cause the viewport shaking on Android.
     /// Hide system status bar automatically when the platform is not Android.
@@ -417,7 +417,7 @@ class CameraPickerState extends State<CameraPicker>
       // ignore: deprecated_member_use
       SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
     }
-    WidgetsBinding.instance?.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     controller.dispose();
     _controller?.dispose();
     _currentExposureOffset.dispose();
@@ -466,7 +466,7 @@ class CameraPickerState extends State<CameraPicker>
     });
     // **IMPORTANT**: Push methods into a post frame callback, which ensures the
     // controller has already unbind from widgets.
-    SchedulerBinding.instance?.addPostFrameCallback((_) async {
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
       // Dispose at last to avoid disposed usage with assertions.
       await _c?.dispose();
 

@@ -40,8 +40,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Uint8List? data;
 
   Future<void> pick(BuildContext context) async {
-    final Size size = MediaQuery.of(context).size;
-    final double scale = MediaQuery.of(context).devicePixelRatio;
+    // final Size size = MediaQuery.of(context).size;
+    // final double scale = MediaQuery.of(context).devicePixelRatio;
     final AssetEntity? _entity = await CameraPicker.pickFromCamera(
       context,
       enableRecording: true,
@@ -51,10 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (mounted) {
         setState(() {});
       }
-      data = await _entity.thumbDataWithSize(
-        (size.width * scale).toInt(),
-        (size.height * scale).toInt(),
-      );
+      data = await _entity.thumbnailData;
       if (mounted) {
         setState(() {});
       }
