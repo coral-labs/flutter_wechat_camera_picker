@@ -41,7 +41,7 @@ class CircleProgressState extends State<CircleProgressBar>
   @override
   void initState() {
     super.initState();
-    SchedulerBinding.instance?.addPostFrameCallback((Duration _) {
+    SchedulerBinding.instance.addPostFrameCallback((Duration _) {
       progressController.forward();
     });
   }
